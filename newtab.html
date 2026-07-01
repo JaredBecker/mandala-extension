@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Tab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/panel.css">
+<link rel="stylesheet" href="css/widgets.css">
+<link rel="stylesheet" href="css/wizard.css">
+</head>
+<body>
+
+<div id="hud" class="ui">
+
+  <div id="center-hud">
+    <div id="clock">--:--</div>
+    <div id="greeting">Good day.</div>
+    <div id="quote"></div>
+  </div>
+
+  <div id="location-widget" class="chip"></div>
+
+  <button id="todo-toggle" class="chip" title="Toggle tasks">&#128203;</button>
+
+  <div id="todo-widget" class="chip">
+    <div class="todo-header-row">
+      <h2>Tasks</h2>
+      <div class="todo-sound-control">
+        <button id="todoSoundToggle" title="Mute task sounds">&#128266;</button>
+        <input type="range" id="todoSoundVolume" min="0" max="100" value="50" title="Task sound volume">
+      </div>
+    </div>
+    <div id="todoList"></div>
+    <form id="todoForm">
+      <input id="todoInput" type="text" placeholder="Add a task" maxlength="140" autocomplete="off">
+      <button type="submit">+</button>
+    </form>
+  </div>
+
+</div>
+
+<div id="panel-toggle" class="ui" title="Toggle controls">&#10022;</div>
+
+<div id="panel" class="ui collapsed">
+  <div class="panel-header">
+    <span class="panel-glyph">&#10022;</span>
+    <div>
+      <h1>MANDALA</h1>
+      <p>drawn by your cursor</p>
+    </div>
+  </div>
+
+  <div class="panel-tabs">
+    <button class="tab-btn active" data-tab="tools">Tools</button>
+    <button class="tab-btn" data-tab="customize">Customize</button>
+  </div>
+
+  <div class="tab-content active" id="tab-tools">
+
+    <p class="section-label">Focus</p>
+    <div id="focus-widget">
+      <span class="value" id="focusValue">0m</span> Focused Today
+      <button id="focusToggle">Start</button>
+    </div>
+
+    <div class="divider"></div>
+    <p class="section-label">Quick links</p>
+    <div id="links-widget"></div>
+
+    <div class="divider"></div>
+    <p class="section-label">Sticky note</p>
+    <textarea id="stickyText" placeholder="Jot something down..."></textarea>
+
+    <div class="divider"></div>
+    <button id="breatheToggleBtn">&#127744; Breathe</button>
+
+    <div class="divider"></div>
+    <p class="section-label">Profile</p>
+    <button id="editProfileBtn">Edit name &amp; location</button>
+
+  </div>
+
+  <div class="tab-content" id="tab-customize">
+
+  <p class="section-label">Shape</p>
+
+  <div class="control-group">
+    <label>Symmetry <span id="symmetryVal">12</span></label>
+    <input type="range" id="symmetry" min="2" max="60" value="12">
+  </div>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="mirror" checked> Mirror reflection</label>
+  </div>
+
+  <div class="control-group">
+    <label>Stroke style</label>
+    <select id="strokeStyle">
+      <option value="line" selected>Flowing line</option>
+      <option value="ribbon">Glowing ribbon</option>
+      <option value="dots">Stippled dots</option>
+      <option value="sparkle">Sparkle burst</option>
+    </select>
+  </div>
+
+  <div class="control-group">
+    <label>Chaos jitter <span id="chaosVal">0</span></label>
+    <input type="range" id="chaos" min="0" max="40" value="0">
+  </div>
+
+  <div class="divider"></div>
+  <p class="section-label">Motion</p>
+
+  <div class="control-group">
+    <label>Brush size <span id="brushVal">3</span></label>
+    <input type="range" id="brush" min="1" max="20" value="3">
+  </div>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="reactSpeed" checked> React to cursor speed</label>
+  </div>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="pulseBrush"> Pulse brush size</label>
+  </div>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="sparkleDust"> Cursor sparkle dust</label>
+  </div>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="autoRotate" checked> Ambient auto-rotate</label>
+  </div>
+
+  <div class="control-group" id="rotateGroup" style="display:block;">
+    <label>Rotate speed <span id="rotateVal">0.15</span></label>
+    <input type="range" id="rotateSpeed" min="0.05" max="2" step="0.05" value="0.15">
+  </div>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="idleDraw" checked> Draw on its own when idle</label>
+  </div>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="doubleIdlePattern"> Draw two patterns at once when idle</label>
+  </div>
+
+  <div class="divider"></div>
+  <p class="section-label">Color</p>
+
+  <div class="control-group">
+    <label>Color mode</label>
+    <select id="colourMode">
+      <option value="rainbow" selected>Rainbow cycle</option>
+      <option value="gradient">Radial gradient</option>
+      <option value="solid">Solid color</option>
+    </select>
+  </div>
+
+  <div class="control-group" id="paletteGroup">
+    <label>Palette</label>
+    <select id="palette">
+      <option value="full" selected>Full spectrum</option>
+      <option value="sunset">Sunset</option>
+      <option value="ocean">Ocean</option>
+      <option value="forest">Forest</option>
+      <option value="mono">Gold monochrome</option>
+    </select>
+  </div>
+
+  <div class="control-group" id="solidColorGroup" style="display:none;">
+    <label>Color</label>
+    <input type="color" id="solidColor" value="#ff3e94">
+  </div>
+
+  <div class="control-group">
+    <label>Glow intensity <span id="glowVal">10</span></label>
+    <input type="range" id="glow" min="0" max="30" value="10">
+  </div>
+
+  <div class="divider"></div>
+  <p class="section-label">Trail &amp; canvas</p>
+
+  <div class="control-group">
+    <div class="radio-row">
+      <label><input type="radio" name="trail" value="fade" checked> Fade (laser)</label>
+      <label><input type="radio" name="trail" value="permanent"> Permanent</label>
+      <label><input type="radio" name="trail" value="cycle"> Cycle (build &amp; fade)</label>
+    </div>
+  </div>
+
+  <div class="control-group" id="fadeGroup">
+    <label>Fade speed <span id="fadeVal">8</span></label>
+    <input type="range" id="fadeSpeed" min="1" max="40" value="8">
+  </div>
+
+  <div class="control-group" id="cycleGroup" style="display:none;">
+    <label>Build time before fading <span id="cycleBuildVal">60s</span></label>
+    <input type="range" id="cycleBuildSeconds" min="15" max="300" step="5" value="60">
+  </div>
+
+  <div class="control-group">
+    <label>Theme color</label>
+    <input type="color" id="bgColorPicker" value="#0a0a0a">
+  </div>
+
+  <div class="divider"></div>
+  <p class="section-label">Presets</p>
+
+  <div class="button-row">
+    <button id="presetNeon">Neon Dream</button>
+    <button id="presetGold">Golden Bloom</button>
+  </div>
+  <div class="button-row">
+    <button id="presetOcean">Deep Ocean</button>
+    <button id="presetChaos">Chaos Bloom</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="button-row">
+    <button id="clearBtn">Clear canvas</button>
+    <button id="saveBtn">Save image</button>
+  </div>
+  <div class="button-row">
+    <button id="randomBtn">&#127922; Surprise me</button>
+  </div>
+
+  <p class="hint">Move your cursor across the canvas to draw. Speed and direction shape the pattern.</p>
+
+  </div>
+
+  <a id="site-credit" href="https://github.com/JaredBecker/mandala-extension" target="_blank" rel="noopener">
+    <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+    Made with &#10084;&#65039; by some guy named Jared
+  </a>
+</div>
+
+<div id="breathing-overlay" class="ui">
+  <button id="breatheExit" class="chip">&times; Exit</button>
+  <div class="breath-ring" id="breathRing"><span id="breathLabel">Breathe in&hellip;</span></div>
+</div>
+
+<div id="wizard-overlay" class="ui">
+  <div class="wizard-inner">
+
+    <div class="wizard-step active" id="wizardStepName">
+      <span class="wizard-glyph">&#10022;</span>
+      <h1>MANDALA</h1>
+      <p>Sit back, relax, and let your cursor become the brush.<br>What should we call you?</p>
+      <input id="wizardName" type="text" placeholder="Your name" maxlength="30">
+      <div class="wizard-btn-row">
+        <button class="wizard-btn" id="wizardNameNext">Next</button>
+      </div>
+    </div>
+
+    <div class="wizard-step" id="wizardStepLocation">
+      <span class="wizard-glyph">&#9728;</span>
+      <h1>WEATHER</h1>
+      <p>Add a place (or a few) to see the weather on your new tab. Totally optional.</p>
+      <div id="wizardLocationSearch">
+        <input id="wizardLocationInput" type="text" placeholder="Search for a city">
+        <button class="wizard-btn" id="wizardLocationSearchBtn">Search</button>
+      </div>
+      <ul id="wizardLocationResults"></ul>
+      <ul id="wizardLocationList"></ul>
+      <div class="wizard-btn-row">
+        <button class="wizard-btn ghost" id="wizardSkip">Skip</button>
+        <button class="wizard-btn" id="wizardFinish">Begin</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/lib/browser-polyfill.min.js"></script>
+<script src="js/lib/p5.min.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/sketch.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/greeting.js"></script>
+<script src="js/quotes.js"></script>
+<script src="js/todo.js"></script>
+<script src="js/links.js"></script>
+<script src="js/stickynote.js"></script>
+<script src="js/focustimer.js"></script>
+<script src="js/breathing.js"></script>
+<script src="js/wizard.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

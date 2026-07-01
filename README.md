@@ -1,19 +1,11 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0c0e1f,50:2b1245,100:0c0e1f&height=230&section=header&text=MANDALA&fontSize=68&fontColor=f2c14e&fontAlignY=38&desc=drawn%20by%20your%20cursor&descAlignY=58&descSize=18&descColor=5fe8ff&animation=fadeIn" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0c0e1f,50:2b1245,100:0c0e1f&height=230&section=header&text=MANDALA&fontSize=68&fontColor=f2c14e&fontAlignY=38&desc=your%20new%20tab%2C%20drawn%20by%20your%20cursor&descAlignY=58&descSize=18&descColor=5fe8ff&animation=fadeIn" width="100%"/>
 
-<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=500&size=16&duration=2800&pause=1100&color=F2C14E&center=true&vCenter=true&width=640&lines=sit+back%2C+relax%2C+and+let+your+cursor+become+the+brush.;speed+and+direction+shape+the+pattern.;music+starts+the+moment+you+begin." alt="typing animation" />
-
-<br/>
-
-[![Enter the mandala](https://img.shields.io/badge/✦%20ENTER%20THE%20MANDALA%20✦-f2c14e?style=for-the-badge&labelColor=0c0e1f)](https://jaredbecker.github.io/mandala/)
-
-<br/>
-
-![p5.js](https://img.shields.io/badge/p5.js-ED225D?style=for-the-badge&logo=p5dotjs&logoColor=f4f1ea&labelColor=0c0e1f)
-![JavaScript](https://img.shields.io/badge/JavaScript-f2c14e?style=for-the-badge&logo=javascript&logoColor=0c0e1f&labelColor=0c0e1f)
-![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-5fe8ff?style=for-the-badge&logo=githubpages&logoColor=0c0e1f&labelColor=0c0e1f)
-![No Build Step](https://img.shields.io/badge/build%20step-none-ff3e94?style=for-the-badge&labelColor=0c0e1f)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-f2c14e?style=for-the-badge&labelColor=0c0e1f)
+![Chrome](https://img.shields.io/badge/Chrome-supported-5fe8ff?style=for-the-badge&logo=googlechrome&logoColor=0c0e1f&labelColor=0c0e1f)
+![Firefox](https://img.shields.io/badge/Firefox-supported-ff3e94?style=for-the-badge&logo=firefoxbrowser&logoColor=0c0e1f&labelColor=0c0e1f)
+![No accounts](https://img.shields.io/badge/accounts-none-f2c14e?style=for-the-badge&labelColor=0c0e1f)
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=0:f2c14e,50:ff3e94,100:5fe8ff&height=3&section=header" width="100%"/>
 
@@ -21,34 +13,28 @@
 
 <br/>
 
-A living mandala that blooms from the motion of your mouse — symmetry, color, and light, generated in real time and set to a synthwave drift. No install, no build step, no dependencies to wrangle. One HTML file, one canvas, infinite pattern.
+A living mandala that blooms from the motion of your mouse — now as your browser's
+new tab. Every tab opens to a symmetry-drawing canvas plus the useful stuff you
+actually want to see first thing: the time, a greeting, your goal for the day,
+weather, a quote, a to-do list, quick links, a focus timer, and a short
+breathing moment synced to the mandala's own rotation.
 
-<br/>
-
-<div align="center">
-
-### ✦ how it works
-
-</div>
-
-Every stroke you draw is mirrored and rotated around the center of the canvas — 2 to 60 times over, with an optional mirror reflection on top. Speed becomes brush weight. Direction becomes color drift. What emerges is never quite the same twice.
+No accounts. No API keys. No tracking. Everything lives in your browser's local
+storage; the only outbound calls are to [Open-Meteo](https://open-meteo.com/)
+for weather, made only if you add a location.
 
 <div align="center">
 
-| ✦ Shape | ✦ Motion | ✦ Color | ✦ Trail & Canvas |
-|:---|:---|:---|:---|
-| Symmetry (2–60 arms) | Brush size | Rainbow cycle | Fade (laser) or permanent |
-| Mirror reflection | Cursor-speed reactivity | Radial gradient | Custom fade speed |
-| Flowing line / glowing ribbon / stippled dots / sparkle burst | Pulse brush | Solid color | Custom background |
-| Chaos jitter | Sparkle dust · ambient auto-rotate | 5 palettes + adjustable glow | — |
+### ✦ features
 
-</div>
-
-<div align="center">
-
-**Presets** — 🎇 Neon Dream · 🥇 Golden Bloom · 🌊 Deep Ocean · 🌪️ Chaos Bloom · 🎲 Surprise me
-
-*Move your cursor. Watch it become the brush.*
+| ✦ The mandala | ✦ On open |
+|:---|:---|
+| Cursor-drawn symmetry (2–60 arms), mirror reflection | Time + "good morning/afternoon/evening" greeting |
+| Flowing line / glowing ribbon / stippled dots / sparkle burst | Daily intention ("what's your main goal today?") |
+| Rainbow, gradient, or solid color, 5 palettes, adjustable glow | Multi-location weather with icons, no key required |
+| Fade (laser) or permanent trail, ambient auto-rotate | Quote of the day, bundled locally, no network call |
+| Presets — Neon Dream, Golden Bloom, Deep Ocean, Chaos Bloom, Surprise me | Quick links, date-filtered to-do list (with a little sound/animation payoff), sticky note, focus timer |
+| Draws on its own when idle, cycling a random look every 10s | Box-breathing overlay that slows the mandala's rotation |
 
 </div>
 
@@ -56,19 +42,28 @@ Every stroke you draw is mirrored and rotated around the center of the canvas �
 
 <div align="center">
 
-### ✦ running it locally
+### ✦ installing (unpacked / developer mode)
 
 </div>
 
-No build, no server, no npm install. Just open it.
+This isn't published to the stores yet — see [PUBLISHING.md](PUBLISHING.md) for
+that. Until then, load it unpacked:
 
-```bash
-git clone https://github.com/JaredBecker/mandala.git
-cd mandala
-open index.html   # or just double-click it
+**Chrome / Edge / Brave (Chromium)**
+```
+1. Go to chrome://extensions
+2. Enable "Developer mode" (top right)
+3. "Load unpacked" → select this repo's folder
+4. Open a new tab
 ```
 
-Everything — markup, styles, and the [p5.js](https://p5js.org/)-powered sketch — lives in a single `index.html`.
+**Firefox**
+```
+1. Go to about:debugging#/runtime/this-firefox
+2. "Load Temporary Add-on…" → select manifest.json
+3. Open a new tab
+   (temporary add-ons are removed when Firefox closes — reload as needed)
+```
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=0:f2c14e,50:ff3e94,100:5fe8ff&height=3&section=header" width="100%"/>
 
@@ -76,8 +71,14 @@ Everything — markup, styles, and the [p5.js](https://p5js.org/)-powered sketch
 
 ### ✦ tech
 
-**[p5.js](https://p5js.org/)** for the canvas and drawing loop &nbsp;·&nbsp; **YouTube IFrame API** for the ambient soundtrack &nbsp;·&nbsp; **Vanilla JS/CSS** — no framework, no bundler, nothing to compile
-
 </div>
+
+**[p5.js](https://p5js.org/)** for the canvas and drawing loop &nbsp;·&nbsp;
+**[webextension-polyfill](https://github.com/mozilla/webextension-polyfill)**
+for one `browser.*` storage API on both browsers &nbsp;·&nbsp; Vanilla JS/CSS,
+no framework, no bundler, nothing to compile.
+
+Everything is split into plain files under `css/` and `js/` — no build step.
+See [PRIVACY.md](PRIVACY.md) for the data-handling summary.
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0c0e1f,50:2b1245,100:0c0e1f&height=120&section=footer&animation=fadeIn" width="100%"/>

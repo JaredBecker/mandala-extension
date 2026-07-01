@@ -1,0 +1,26 @@
+:root{
+  /* --panel-bg and --select-bg are overwritten at runtime from the theme
+     color picker (see applyThemeFromBg in sketch.js) — these are just the
+     pre-JS fallback, kept in sync with the default theme color */
+  --panel-bg: rgba(10,10,10,0.68);
+  --panel-border: rgba(242,193,78,0.28);
+  --select-bg: #1c1c1c;
+  --gold:#f2c14e;
+  --magenta:#ff3e94;
+  --cyan:#5fe8ff;
+  --ink:#f4f1ea;
+  --ink-dim:#9aa0c0;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;overflow:hidden;background:#0c0e1f;font-family:'Inter',sans-serif;overscroll-behavior:none;height:100%;}
+canvas{display:block; touch-action:none;}
+
+html, body{
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="10" fill="none" stroke="%23f2c14e" stroke-width="1.6" opacity="0.9"/><line x1="14" y1="1" x2="14" y2="4" stroke="%235fe8ff" stroke-width="1.4"/><line x1="14" y1="24" x2="14" y2="27" stroke="%235fe8ff" stroke-width="1.4"/><line x1="1" y1="14" x2="4" y2="14" stroke="%235fe8ff" stroke-width="1.4"/><line x1="24" y1="14" x2="27" y2="14" stroke="%235fe8ff" stroke-width="1.4"/><circle cx="14" cy="14" r="2" fill="%23ff3e94"/></svg>') 14 14, crosshair;
+}
+.ui, .ui *{ cursor:auto; }
+.ui button, .ui a, .ui select, .ui input[type="range"], .ui input[type="color"], .ui input[type="checkbox"], .ui .clickable{ cursor:pointer; }
+
+a{ color: inherit; }
+
+@keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
