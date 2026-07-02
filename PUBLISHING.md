@@ -13,7 +13,7 @@ automated) — this is the map for both.
    and `.claude/`. PowerShell one-liner:
 
    ```powershell
-   tar -a -c -f mandala-1.0.0.zip manifest.json newtab.html css js data icons sounds
+   tar -a -c -f mandala-1.0.0.zip manifest.json newtab.html css js data icons sounds fonts
    ```
 
    (Run this in **PowerShell or cmd**, where `tar` is Windows' bsdtar and
