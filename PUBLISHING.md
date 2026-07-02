@@ -16,8 +16,11 @@ automated) — this is the map for both.
    tar -a -c -f mandala-1.0.0.zip manifest.json newtab.html css js data icons sounds
    ```
 
-   (Use `tar`, not `Compress-Archive` — the latter writes backslash paths
-   inside the zip, which store uploaders can reject.)
+   (Run this in **PowerShell or cmd**, where `tar` is Windows' bsdtar and
+   `-a` produces a real zip. In Git Bash, `tar` is GNU tar, which silently
+   writes a plain tar file with a .zip name — the store rejects it as an
+   invalid package. Avoid `Compress-Archive` too: it writes backslash paths
+   inside the zip, which uploaders can also reject.)
 3. In the developer dashboard: **New Item** → upload the zip.
 4. Fill out the listing:
    - Description, category ("Productivity" or "Fun & Games" both fit),
