@@ -47,12 +47,21 @@
 
     let active = locations.find((l) => l.id === state.activeLocationId) || locations[0];
 
-    el.innerHTML = `
-      <span class="icon" id="weatherIcon">…</span>
-      <span class="temp" id="weatherTemp">--°</span>
-      <span class="place">${active.label}</span>
-      <span class="locations" id="weatherDots"></span>
-    `;
+    // built via DOM (not an HTML string) because the label originates from
+    // the geocoding API — remote data never gets parsed as markup
+    el.textContent = '';
+    const mk = (cls, id, text) => {
+      const s = document.createElement('span');
+      s.className = cls;
+      if (id) s.id = id;
+      if (text) s.textContent = text;
+      el.appendChild(s);
+      return s;
+    };
+    mk('icon', 'weatherIcon', '…');
+    mk('temp', 'weatherTemp', '--°');
+    mk('place', null, active.label);
+    mk('locations', 'weatherDots', null);
 
     const dots = document.getElementById('weatherDots');
     locations.forEach((loc) => {

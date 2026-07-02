@@ -39,7 +39,10 @@
     a.target = '_blank';
     a.rel = 'noopener';
     a.title = 'Right-click to remove';
-    a.innerHTML = `<span class="glyph">🔗</span>${link.label}`;
+    const glyph = document.createElement('span');
+    glyph.className = 'glyph';
+    glyph.textContent = '🔗';
+    a.append(glyph, link.label); // label is user-typed — append as text, never HTML
     a.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       confirmingId = link.id;
