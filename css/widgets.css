@@ -10,7 +10,11 @@
 #hud > *{ position:fixed; pointer-events:auto; }
 
 /* ---- center: clock, greeting, quote ---- */
-#center-hud{ top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; width:min(560px, calc(100vw - 48px)); background:none; border:none; box-shadow:none; backdrop-filter:none; }
+/* pointer-events:none (overriding the #hud > * auto rule): this block is
+   display-only, and if it kept taking mouse events its invisible box would
+   trigger the "pause drawing over UI" guard — blocking drawing across the
+   whole center of the screen */
+#center-hud{ top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; width:min(560px, calc(100vw - 48px)); background:none; border:none; box-shadow:none; backdrop-filter:none; pointer-events:none; }
 #clock{ font-family:'Inter',sans-serif; font-weight:600; font-size:clamp(48px,9vw,88px); color:var(--ink); text-shadow:0 4px 30px rgba(0,0,0,0.5); }
 #greeting{ font-family:'Inter',sans-serif; font-weight:500; font-size:clamp(20px,3vw,28px); color:var(--ink); margin-top:6px; text-shadow:0 2px 20px rgba(0,0,0,0.5); }
 #quote{ margin-top:30px; font-size:15px; color:var(--ink); line-height:1.6; font-style:italic; text-shadow:0 2px 20px rgba(0,0,0,0.5); }
