@@ -135,7 +135,13 @@ function randomCosmeticConfig(){
     // trail behaviour itself is now part of the shuffle too — sometimes
     // idle drawing fades like a laser, sometimes it builds up permanently,
     // sometimes it breathes between the two (cycle mode)
-    trailMode: random(['fade', 'permanent', 'cycle'])
+    trailMode: random(['fade', 'permanent', 'cycle']),
+    // cycle mode's build time defaults to 60s for manual use, but the idle
+    // shuffle re-rolls everything every 10s — at 60s it would almost never
+    // survive long enough to reach its own fade phase, so it'd just sit in
+    // "building" the whole window and look identical to permanent mode.
+    // A short, idle-specific build time means it actually gets to fade.
+    cycleBuildSeconds: floor(random(5, 15))
   };
 }
 
@@ -143,7 +149,7 @@ function captureCosmeticConfig(){
   return {
     symmetry, mirror, strokeStyleMode, pulseBrush, chaos, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
-    autoRotate, trailMode
+    autoRotate, trailMode, cycleBuildSeconds
   };
 }
 
@@ -151,7 +157,7 @@ function applyCosmeticConfig(cfg){
   ({
     symmetry, mirror, strokeStyleMode, pulseBrush, chaos, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
-    autoRotate, trailMode
+    autoRotate, trailMode, cycleBuildSeconds
   } = cfg);
   if (trailMode === 'cycle') resetCyclePhase();
 }
