@@ -2,6 +2,12 @@
 (async function () {
   const state = await MandalaStorage.load();
 
+  // render-loader.js picks the WebGL or p5 renderer; wait until the chosen
+  // sketch's globals (applyMandalaState etc.) exist before using them
+  if (window.rendererReady){
+    await window.rendererReady.catch(() => {});
+  }
+
   document.getElementById('panel').classList.toggle('collapsed', state.panelCollapsed);
 
   applyMandalaState(state.mandala);
