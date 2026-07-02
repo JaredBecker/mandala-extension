@@ -9,7 +9,11 @@
       colourMode: 'rainbow', solidColourHex: '#ff3e94', trailMode: 'fade',
       fadeSpeed: 8, bgColourHex: '#0a0a0a', palette: 'full', glowIntensity: 10,
       pulseBrush: false, strokeStyleMode: 'line', autoRotate: true,
-      rotateSpeed: 0.15, chaos: 0, sparkleDust: false, idleDraw: true,
+      rotateSpeed: 0.15, sparkleDust: false, idleDraw: true,
+      strokeAlpha: 92,        // stroke opacity, p5's 0-100 alpha scale
+      rainbowSpeed: 0.7,      // hue-cycle rate in rainbow colour mode
+      idlePace: 100,          // % multiplier on ambient drawing speed
+      idleShuffleSeconds: 10, // how often ambient drawing restyles itself
       // off by default — running two idle pens roughly doubles idle-draw
       // cost, fine on capable hardware but not something to force on
       // everyone's machine

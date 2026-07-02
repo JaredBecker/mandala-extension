@@ -37,10 +37,13 @@ let pulseBrush = false;
 let strokeStyleMode = 'line'; // 'line' | 'ribbon' | 'dots' | 'sparkle'
 let autoRotate = true;
 let rotateSpeed = 0.15;
-let chaos = 0;
 let sparkleDust = false;
 let idleDraw = true;
 let doubleIdlePattern = false;
+let strokeAlpha = 92;        // stroke opacity, 0-100 like p5's HSB alpha
+let rainbowSpeed = 0.7;      // hue-cycle rate in rainbow colour mode
+let idlePace = 100;          // % multiplier on ambient drawing speed
+let idleShuffleSeconds = 10; // how often ambient drawing restyles itself
 
 let rotationAngle = 0;
 let bufferSize = 0;
@@ -221,10 +224,13 @@ function applyThemeFromBg(hex){
 }
 
 // ---------- idle ambient drawing (identical logic to sketch.js) ----------
-const IDLE_THRESHOLD_MS = 2000;
-const IDLE_CONFIG_INTERVAL_MS = 10000;
-const IDLE_PATH_ALGORITHMS = ['rose', 'spiral', 'lissajous', 'drift'];
+const IDLE_THRESHOLD_MS = 1000;
+const IDLE_PATH_ALGORITHMS = ['rose', 'spiral', 'lissajous', 'drift', 'epicycle', 'lemniscate', 'wave'];
 let lastRealInput = Date.now();
+// a freshly opened tab starts drawing on frame one instead of sitting empty
+// for the idle threshold — the wait only applies after real input has
+// happened at least once
+let hasInteracted = false;
 let idleActive = false;
 let idlePens = [];
 let idleSpeedT = 0;
@@ -237,8 +243,10 @@ function randomCosmeticConfig(){
     mirror: true,
     strokeStyleMode: random(['line', 'ribbon', 'dots', 'sparkle']),
     pulseBrush: random() > 0.5,
-    chaos: 0,
     colourMode: random(['rainbow', 'gradient', 'solid']),
+    // kept above 55 so ambient art never looks washed out on the shuffle
+    strokeAlpha: floor(random(55, 101)),
+    rainbowSpeed: random(0.3, 1.5),
     palette: random(['full', 'sunset', 'ocean', 'forest', 'mono']),
     solidColourHex: hsbToHex(random(360), 75, 100),
     glowIntensity: floor(random(4, 24)),
@@ -254,17 +262,17 @@ function randomCosmeticConfig(){
 
 function captureCosmeticConfig(){
   return {
-    symmetry, mirror, strokeStyleMode, pulseBrush, chaos, colourMode, palette,
+    symmetry, mirror, strokeStyleMode, pulseBrush, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
-    autoRotate, trailMode, cycleBuildSeconds
+    autoRotate, trailMode, cycleBuildSeconds, strokeAlpha, rainbowSpeed
   };
 }
 
 function applyCosmeticConfig(cfg){
   ({
-    symmetry, mirror, strokeStyleMode, pulseBrush, chaos, colourMode, palette,
+    symmetry, mirror, strokeStyleMode, pulseBrush, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
-    autoRotate, trailMode, cycleBuildSeconds
+    autoRotate, trailMode, cycleBuildSeconds, strokeAlpha, rainbowSpeed
   } = cfg);
   if (trailMode === 'cycle') resetCyclePhase();
 }
@@ -290,7 +298,7 @@ function enterIdleConfigShuffle(){
   idleConfigTimer = setInterval(() => {
     applyCosmeticConfig(randomCosmeticConfig());
     pickIdlePathAlgorithms();
-  }, IDLE_CONFIG_INTERVAL_MS);
+  }, idleShuffleSeconds * 1000);
 }
 
 function exitIdleConfigShuffle(){
@@ -315,6 +323,7 @@ function wireInputTracking(){
     }
     mouseX = e.clientX; mouseY = e.clientY;
     lastRealInput = Date.now();
+    hasInteracted = true;
     if (idleActive){
       idleActive = false;
       lastX = null; lastY = null; // force a fresh starting point, not a stale pre-idle one
@@ -325,7 +334,12 @@ function wireInputTracking(){
       lastX = mouseX; lastY = mouseY;
     }
   });
-  window.addEventListener('touchstart', () => { lastRealInput = Date.now(); }, { passive: true });
+  window.addEventListener('touchstart', () => { lastRealInput = Date.now(); hasInteracted = true; }, { passive: true });
+
+  // Shift+double-click snaps the camera back to flat
+  canvas.addEventListener('dblclick', (e) => {
+    if (e.shiftKey){ userPitch = 0; userYaw = 0; }
+  });
 
   // ---- Depth camera input ----
   // holding Shift pauses drawing; Shift+drag tilts. Ending either resets
@@ -841,7 +855,9 @@ function frame(nowMs){
 
   updateAndDrawParticles();
 
-  if (idleDraw && !idleActive && Date.now() - lastRealInput > IDLE_THRESHOLD_MS){
+  // !hasInteracted: a fresh tab starts drawing immediately — nobody should
+  // stare at an empty canvas waiting out the idle threshold on open
+  if (idleDraw && !idleActive && (!hasInteracted || Date.now() - lastRealInput > IDLE_THRESHOLD_MS)){
     idleActive = true;
     enterIdleConfigShuffle(); // also initializes fresh idlePens
   }
@@ -892,6 +908,38 @@ function computeIdleStep(pen, speedEnvelope, cx, cy, maxRX, maxRY){
     nx = cx + constrain(sin(pen.pulseT * freqX) + jitterX, -1, 1) * maxRX;
     ny = cy + constrain(sin(pen.pulseT * freqY + PI / 3) + jitterY, -1, 1) * maxRY;
 
+  } else if (pen.algorithm === 'epicycle'){
+    // spirograph: two arms spinning at different, slowly drifting rates —
+    // the ratio between them decides the loop pattern, and letting it
+    // drift means the loops never quite close the same way twice
+    pen.dirAngle += 0.011 * speedEnvelope;
+    pen.pulseT += 0.011 * (2.2 + noise(pen.dirAngle * 0.05, 600) * 1.6) * speedEnvelope;
+    nx = cx + (cos(pen.dirAngle) * 0.62 + cos(pen.pulseT) * 0.34) * maxRX;
+    ny = cy + (sin(pen.dirAngle) * 0.62 + sin(pen.pulseT) * 0.34) * maxRY;
+
+  } else if (pen.algorithm === 'lemniscate'){
+    // figure-eight that slowly spins whole and breathes in size — with
+    // symmetry the two lobes multiply into petal clusters
+    pen.pulseT += 0.008 * speedEnvelope;
+    pen.dirAngle += 0.0012 * speedEnvelope;
+    const scale = 0.5 + noise(pen.pulseT * 0.4, 1500) * 0.5;
+    const lx = sin(pen.pulseT) * scale;
+    const ly = sin(pen.pulseT) * cos(pen.pulseT) * scale * 1.4;
+    const cA = cos(pen.dirAngle), sA = sin(pen.dirAngle);
+    nx = cx + (lx * cA - ly * sA) * maxRX;
+    ny = cy + (lx * sA + ly * cA) * maxRY;
+
+  } else if (pen.algorithm === 'wave'){
+    // full-width sine sweeps: the pen glides side to side while its height
+    // undulates at a drifting frequency — with symmetry this weaves a
+    // lattice/web rather than a flower
+    pen.pulseT += 0.007 * speedEnvelope;
+    const sweep = sin(pen.pulseT * 0.6);
+    const freq = 2.4 + noise(pen.pulseT * 0.3, 800) * 1.8;
+    const amp = 0.3 + noise(pen.pulseT * 0.2, 1900) * 0.45;
+    nx = cx + sweep * maxRX;
+    ny = cy + sin(pen.pulseT * freq) * amp * maxRY;
+
   } else {
     pen.pulseT += 0.006 * speedEnvelope;
     const px = pen.x === null ? cx : pen.x;
@@ -913,7 +961,7 @@ function computeIdleStep(pen, speedEnvelope, cx, cy, maxRX, maxRY){
 
 function stepIdleDrawing(){
   idleSpeedT += 0.003;
-  const speedEnvelope = 0.35 + noise(idleSpeedT) * 0.5;
+  const speedEnvelope = (0.35 + noise(idleSpeedT) * 0.5) * (idlePace / 100);
 
   const cx = canvas.width / 2, cy = canvas.height / 2;
   const maxRX = (canvas.width / 2) * 0.97;
@@ -938,10 +986,6 @@ function paletteHue(t){
   return (range[0] + t * (range[1] - range[0])) % 360;
 }
 
-function jitter(v){
-  return chaos > 0 ? v + random(-chaos, chaos) : v;
-}
-
 function drawMandalaStroke(x1, y1, x2, y2){
   const p1 = toBufferSpace(x1, y1);
   const p2 = toBufferSpace(x2, y2);
@@ -959,15 +1003,16 @@ function drawMandalaStroke(x1, y1, x2, y2){
   let strokeColour; // {h,s,b,a} — alpha on p5's 0..100 scale
   if (colourMode === 'rainbow'){
     const t = ((hueShift + (reactToSpeed ? speed * 4 : 0)) % 360) / 360;
-    strokeColour = { h: paletteHue(t), s: 75, b: 100, a: 92 };
-    hueShift = (hueShift + 0.7) % 360;
+    strokeColour = { h: paletteHue(t), s: 75, b: 100, a: strokeAlpha };
+    hueShift = (hueShift + rainbowSpeed) % 360;
   } else if (colourMode === 'gradient'){
     const d = hypot(dx, dy);
     const maxD = hypot(cx, cy);
     const t = constrain(d / maxD, 0, 1);
-    strokeColour = { h: paletteHue(t), s: 75, b: 100, a: 92 };
+    strokeColour = { h: paletteHue(t), s: 75, b: 100, a: strokeAlpha };
   } else {
     strokeColour = hexToHSB(solidColourHex);
+    strokeColour.a = strokeAlpha;
   }
 
   const angleStep = TWO_PI / symmetry;
@@ -982,15 +1027,14 @@ function drawMandalaStroke(x1, y1, x2, y2){
   }
 }
 
-// one symmetry arm: apply chaos jitter in local (pre-rotation) space like
-// the p5 version, then rotate/mirror into art-buffer world space on the CPU
+// one symmetry arm: rotate/mirror local coords into art-buffer world space
+// on the CPU
 function drawArm(pdx, pdy, dx, dy, sw, col, cx, cy, cosA, sinA, mirrored){
-  let jpdx = jitter(pdx), jpdy = jitter(pdy), jdx = jitter(dx), jdy = jitter(dy);
-  if (mirrored){ jpdy = -jpdy; jdy = -jdy; }
-  const ax = cx + jpdx * cosA - jpdy * sinA;
-  const ay = cy + jpdx * sinA + jpdy * cosA;
-  const bx = cx + jdx * cosA - jdy * sinA;
-  const by = cy + jdx * sinA + jdy * cosA;
+  if (mirrored){ pdy = -pdy; dy = -dy; }
+  const ax = cx + pdx * cosA - pdy * sinA;
+  const ay = cy + pdx * sinA + pdy * cosA;
+  const bx = cx + dx * cosA - dy * sinA;
+  const by = cy + dx * sinA + dy * cosA;
 
   // world space directly (the p5 version spawns in arm-local space and
   // converts through the active canvas transform — same end result)
@@ -1090,19 +1134,31 @@ function applyMandalaState(m){
   autoRotate = m.autoRotate; $('autoRotate').checked = autoRotate;
   rotateSpeed = m.rotateSpeed; userRotateSpeed = rotateSpeed;
   $('rotateSpeed').value = rotateSpeed; $('rotateVal').textContent = rotateSpeed.toFixed(2);
-  chaos = m.chaos; $('chaos').value = chaos; $('chaosVal').textContent = chaos;
   sparkleDust = m.sparkleDust; $('sparkleDust').checked = sparkleDust;
   idleDraw = m.idleDraw; $('idleDraw').checked = idleDraw;
   doubleIdlePattern = m.doubleIdlePattern; $('doubleIdlePattern').checked = doubleIdlePattern;
+  strokeAlpha = m.strokeAlpha; $('strokeAlpha').value = strokeAlpha; $('strokeAlphaVal').textContent = strokeAlpha;
+  rainbowSpeed = m.rainbowSpeed; $('rainbowSpeed').value = rainbowSpeed; $('rainbowSpeedVal').textContent = rainbowSpeed.toFixed(1);
+  idlePace = m.idlePace; $('idlePace').value = idlePace; $('idlePaceVal').textContent = idlePace + '%';
+  idleShuffleSeconds = m.idleShuffleSeconds; $('idleShuffleSeconds').value = idleShuffleSeconds; $('idleShuffleVal').textContent = idleShuffleSeconds + 's';
   depthAmount = m.depthAmount; $('depthAmount').value = depthAmount; $('depthVal').textContent = depthAmount;
   depthDrift = m.depthDrift; $('depthDrift').checked = depthDrift;
 
   $('solidColorGroup').style.display = colourMode === 'solid' ? 'block' : 'none';
   $('paletteGroup').style.display = colourMode === 'solid' ? 'none' : 'block';
+  $('rainbowSpeedGroup').style.display = colourMode === 'rainbow' ? 'block' : 'none';
   $('fadeGroup').style.display = (trailMode === 'fade' || trailMode === 'cycle') ? 'block' : 'none';
   $('cycleGroup').style.display = trailMode === 'cycle' ? 'block' : 'none';
   $('rotateGroup').style.display = autoRotate ? 'block' : 'none';
   if (trailMode === 'cycle') resetCyclePhase();
+
+  // with instant-on ambient drawing, state can load while the idle shuffle
+  // is already running — refresh the captured "restore on wake" config to
+  // the loaded one and re-roll the ambient look on top of it
+  if (idleActive && idlePrevConfig){
+    idlePrevConfig = captureCosmeticConfig();
+    applyCosmeticConfig(randomCosmeticConfig());
+  }
 
   // repaint the trail buffer in the loaded background colour (main.js does
   // this for the p5 path; here the renderer owns it)
@@ -1116,8 +1172,9 @@ function currentMandalaState(){
   return {
     symmetry, mirror, brushSize, reactToSpeed, colourMode, solidColourHex,
     trailMode, fadeSpeed, cycleBuildSeconds, bgColourHex, palette, glowIntensity, pulseBrush,
-    strokeStyleMode, autoRotate, rotateSpeed, chaos, sparkleDust, idleDraw,
-    doubleIdlePattern, depthAmount, depthDrift
+    strokeStyleMode, autoRotate, rotateSpeed, sparkleDust, idleDraw,
+    doubleIdlePattern, strokeAlpha, rainbowSpeed, idlePace, idleShuffleSeconds,
+    depthAmount, depthDrift
   };
 }
 
@@ -1140,10 +1197,10 @@ function setBreathingRotate(active, speed){
 
 // ---------- presets (identical to sketch.js) ----------
 const PRESETS = {
-  neon: { symmetry: 16, mirror: true, strokeStyleMode: 'line', colourMode: 'rainbow', palette: 'full', glowIntensity: 18, chaos: 0, trailMode: 'fade', fadeSpeed: 10 },
-  gold: { symmetry: 8, mirror: true, strokeStyleMode: 'ribbon', colourMode: 'solid', solidColourHex: '#f2c14e', glowIntensity: 14, chaos: 0, trailMode: 'permanent' },
-  ocean: { symmetry: 24, mirror: false, strokeStyleMode: 'dots', colourMode: 'gradient', palette: 'ocean', glowIntensity: 12, chaos: 0, trailMode: 'fade', fadeSpeed: 6 },
-  chaosBloom: { symmetry: 10, mirror: true, strokeStyleMode: 'sparkle', colourMode: 'rainbow', palette: 'sunset', glowIntensity: 20, chaos: 22, trailMode: 'fade', fadeSpeed: 14 }
+  neon: { symmetry: 16, mirror: true, strokeStyleMode: 'line', colourMode: 'rainbow', palette: 'full', glowIntensity: 18, trailMode: 'fade', fadeSpeed: 10 },
+  gold: { symmetry: 8, mirror: true, strokeStyleMode: 'ribbon', colourMode: 'solid', solidColourHex: '#f2c14e', glowIntensity: 14, trailMode: 'permanent' },
+  ocean: { symmetry: 24, mirror: false, strokeStyleMode: 'dots', colourMode: 'gradient', palette: 'ocean', glowIntensity: 12, trailMode: 'fade', fadeSpeed: 6 },
+  chaosBloom: { symmetry: 10, mirror: true, strokeStyleMode: 'sparkle', colourMode: 'rainbow', palette: 'sunset', glowIntensity: 20, trailMode: 'fade', fadeSpeed: 14 }
 };
 
 function applyPreset(name){
@@ -1158,11 +1215,11 @@ function applyPreset(name){
     colourMode = p.colourMode; $('colourMode').value = colourMode;
     $('solidColorGroup').style.display = colourMode === 'solid' ? 'block' : 'none';
     $('paletteGroup').style.display = colourMode === 'solid' ? 'none' : 'block';
+    $('rainbowSpeedGroup').style.display = colourMode === 'rainbow' ? 'block' : 'none';
   }
   if (p.palette !== undefined){ palette = p.palette; $('palette').value = palette; }
   if (p.solidColourHex !== undefined){ solidColourHex = p.solidColourHex; $('solidColor').value = solidColourHex; }
   if (p.glowIntensity !== undefined){ glowIntensity = p.glowIntensity; $('glow').value = glowIntensity; $('glowVal').textContent = glowIntensity; }
-  if (p.chaos !== undefined){ chaos = p.chaos; $('chaos').value = chaos; $('chaosVal').textContent = chaos; }
   if (p.trailMode !== undefined){
     trailMode = p.trailMode;
     const radio = document.querySelector('input[name="trail"][value="' + trailMode + '"]');
@@ -1205,12 +1262,6 @@ function wireUpPanel(){
 
   $('strokeStyle').addEventListener('change', (e) => { strokeStyleMode = e.target.value; saveMandalaState(); });
 
-  $('chaos').addEventListener('input', (e) => {
-    chaos = parseInt(e.target.value, 10);
-    $('chaosVal').textContent = chaos;
-    saveMandalaState();
-  });
-
   $('brush').addEventListener('input', (e) => {
     brushSize = parseInt(e.target.value, 10);
     $('brushVal').textContent = brushSize;
@@ -1240,6 +1291,7 @@ function wireUpPanel(){
     colourMode = e.target.value;
     $('solidColorGroup').style.display = colourMode === 'solid' ? 'block' : 'none';
     $('paletteGroup').style.display = colourMode === 'solid' ? 'none' : 'block';
+    $('rainbowSpeedGroup').style.display = colourMode === 'rainbow' ? 'block' : 'none';
     saveMandalaState();
   });
 
@@ -1249,6 +1301,30 @@ function wireUpPanel(){
   $('glow').addEventListener('input', (e) => {
     glowIntensity = parseInt(e.target.value, 10);
     $('glowVal').textContent = glowIntensity;
+    saveMandalaState();
+  });
+
+  $('strokeAlpha').addEventListener('input', (e) => {
+    strokeAlpha = parseInt(e.target.value, 10);
+    $('strokeAlphaVal').textContent = strokeAlpha;
+    saveMandalaState();
+  });
+
+  $('rainbowSpeed').addEventListener('input', (e) => {
+    rainbowSpeed = parseFloat(e.target.value);
+    $('rainbowSpeedVal').textContent = rainbowSpeed.toFixed(1);
+    saveMandalaState();
+  });
+
+  $('idlePace').addEventListener('input', (e) => {
+    idlePace = parseInt(e.target.value, 10);
+    $('idlePaceVal').textContent = idlePace + '%';
+    saveMandalaState();
+  });
+
+  $('idleShuffleSeconds').addEventListener('input', (e) => {
+    idleShuffleSeconds = parseInt(e.target.value, 10);
+    $('idleShuffleVal').textContent = idleShuffleSeconds + 's';
     saveMandalaState();
   });
 
@@ -1317,14 +1393,11 @@ function randomizeSettings($){
   pulseBrush = random() > 0.5;
   $('pulseBrush').checked = pulseBrush;
 
-  chaos = random() > 0.6 ? floor(random(5, 30)) : 0;
-  $('chaos').value = chaos;
-  $('chaosVal').textContent = chaos;
-
   colourMode = random(['rainbow', 'gradient', 'solid']);
   $('colourMode').value = colourMode;
   $('solidColorGroup').style.display = colourMode === 'solid' ? 'block' : 'none';
   $('paletteGroup').style.display = colourMode === 'solid' ? 'none' : 'block';
+  $('rainbowSpeedGroup').style.display = colourMode === 'rainbow' ? 'block' : 'none';
 
   palette = random(['full', 'sunset', 'ocean', 'forest', 'mono']);
   $('palette').value = palette;
@@ -1332,6 +1405,14 @@ function randomizeSettings($){
   glowIntensity = floor(random(4, 24));
   $('glow').value = glowIntensity;
   $('glowVal').textContent = glowIntensity;
+
+  strokeAlpha = floor(random(60, 101));
+  $('strokeAlpha').value = strokeAlpha;
+  $('strokeAlphaVal').textContent = strokeAlpha;
+
+  rainbowSpeed = Math.round(random(0.3, 1.6) * 10) / 10;
+  $('rainbowSpeed').value = rainbowSpeed;
+  $('rainbowSpeedVal').textContent = rainbowSpeed.toFixed(1);
 
   saveMandalaState();
 }
@@ -1383,6 +1464,11 @@ function start(){
   // which renderer is active
   window.applyMandalaState = applyMandalaState;
   window.setBreathingRotate = setBreathingRotate;
+
+  // camera-control tips in the how-to only apply to this renderer
+  document.querySelectorAll('#howtoBox .howto-webgl').forEach((li) => {
+    li.style.display = 'list-item';
+  });
 
   const flavour = (isWebGL2 ? 'WebGL2' : 'WebGL1') + (floatTrails ? ' (float trails)' : ' (8-bit trails)');
   document.documentElement.dataset.renderer = 'webgl';

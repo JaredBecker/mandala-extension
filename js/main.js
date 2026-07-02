@@ -22,6 +22,10 @@
     rendererHint.textContent = 'Saved — takes effect on your next new tab.';
   });
 
+  document.getElementById('howtoBtn').addEventListener('click', () => {
+    document.getElementById('howtoBox').classList.toggle('open');
+  });
+
   document.getElementById('panel').classList.toggle('collapsed', state.panelCollapsed);
 
   applyMandalaState(state.mandala);
