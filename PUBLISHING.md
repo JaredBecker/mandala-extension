@@ -7,10 +7,17 @@ automated) — this is the map for both.
 
 1. **Register as a developer**: [chrome.google.com/webstore/devconsole](https://chrome.google.com/webstore/devconsole)
    with any Google account. One-time **$5 registration fee**, paid once, ever.
-2. **Zip the extension**: from the repo root, zip everything *except*
-   `README.md`, `PRIVACY.md`, `PUBLISHING.md`, and `.git/` — only
-   `manifest.json`, `newtab.html`, `css/`, `js/`, `data/`, `icons/` need to
-   ship.
+2. **Zip the extension**: from the repo root, zip only what ships —
+   `manifest.json`, `newtab.html`, `css/`, `js/`, `data/`, `icons/`, and
+   `sounds/`. Leave out `README.md`, `PRIVACY.md`, `PUBLISHING.md`, `.git/`,
+   and `.claude/`. PowerShell one-liner:
+
+   ```powershell
+   tar -a -c -f mandala-1.0.0.zip manifest.json newtab.html css js data icons sounds
+   ```
+
+   (Use `tar`, not `Compress-Archive` — the latter writes backslash paths
+   inside the zip, which store uploaders can reject.)
 3. In the developer dashboard: **New Item** → upload the zip.
 4. Fill out the listing:
    - Description, category ("Productivity" or "Fun & Games" both fit),

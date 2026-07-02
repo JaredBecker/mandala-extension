@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mandala — New Tab",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A living mandala drawn by your cursor as your new tab background — plus weather, a daily quote, to-dos, and a breathing moment. No accounts, no tracking.",
   "icons": {
     "16": "icons/icon16.png",
