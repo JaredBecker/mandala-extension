@@ -62,8 +62,30 @@
 
     <p class="section-label">Focus</p>
     <div id="focus-widget">
-      <span class="value" id="focusValue">0m</span> Focused Today
-      <button id="focusToggle">Start</button>
+      <div class="pomo-top">
+        <div class="pomo-ring-wrap">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="pomo-track" cx="50" cy="50" r="44"></circle>
+            <circle class="pomo-progress" id="pomoProgress" cx="50" cy="50" r="44"></circle>
+          </svg>
+          <div class="pomo-center">
+            <span id="pomoTime">25:00</span>
+            <span id="pomoPhase">Focus</span>
+          </div>
+        </div>
+        <div class="pomo-side">
+          <button id="pomoStart">Start</button>
+          <button id="pomoSkip">Skip</button>
+          <button id="pomoSettingsBtn" title="Timer lengths">&#9881;</button>
+        </div>
+      </div>
+      <div id="pomoSettings" style="display:none;">
+        <div class="pomo-setting"><label>Focus <span><input id="pomoWorkMin" type="number" min="1" max="120"> min</span></label></div>
+        <div class="pomo-setting"><label>Break <span><input id="pomoShortMin" type="number" min="1" max="60"> min</span></label></div>
+        <div class="pomo-setting"><label>Long break <span><input id="pomoLongMin" type="number" min="1" max="60"> min</span></label></div>
+        <div class="pomo-setting"><label>Long break every <span><input id="pomoCycles" type="number" min="2" max="8"> rounds</span></label></div>
+      </div>
+      <p class="pomo-meta"><span class="value" id="focusValue">0m</span> focused today &middot; <span id="pomoDots"></span></p>
     </div>
 
     <div class="divider"></div>

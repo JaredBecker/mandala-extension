@@ -25,7 +25,14 @@
     stickyNote: '',
     todoSound: { volume: 50, muted: false },
     links: [],
-    focusTimer: { date: '', seconds: 0 }
+    // focusTimer stays the daily "focused today" total (date-keyed, resets
+    // each calendar day); pomodoro holds the timer config + the live run
+    // state so an in-progress session survives opening a new tab
+    focusTimer: { date: '', seconds: 0 },
+    pomodoro: {
+      workMin: 25, shortMin: 5, longMin: 15, cyclesToLong: 4,
+      run: { phase: 'work', running: false, endsAt: 0, remainingSec: null, cycleCount: 0 }
+    }
   };
 
   function isPlainObject(v){

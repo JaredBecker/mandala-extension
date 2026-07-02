@@ -106,10 +106,48 @@
 #todoForm{ display:flex; gap:6px; margin-top:8px; flex:none; }
 #todoInput{ flex:1; background:var(--select-bg); border:1px solid rgba(242,193,78,0.25); border-radius:8px; color:var(--ink); font-size:12px; padding:6px 8px; }
 
-/* ---- panel "Tools" tab: focus timer, quick links, sticky note ---- */
+/* ---- panel "Tools" tab: pomodoro focus timer, quick links, sticky note ---- */
 #focus-widget{ font-size:12.5px; color:var(--ink-dim); margin-bottom:4px; }
-#focus-widget .value{ color:var(--gold); font-size:16px; font-weight:600; margin-right:6px; }
-#focusToggle{ float:right; width:auto; padding:4px 10px; font-size:10.5px; }
+#focus-widget .value{ color:var(--gold); font-size:14px; font-weight:600; }
+
+.pomo-top{ display:flex; align-items:center; gap:14px; }
+.pomo-ring-wrap{ position:relative; width:92px; height:92px; flex:none; }
+.pomo-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.pomo-track{ fill:none; stroke:rgba(242,193,78,0.15); stroke-width:5; }
+.pomo-progress{
+  fill:none; stroke:var(--gold); stroke-width:5; stroke-linecap:round;
+  stroke-dasharray:276.46; stroke-dashoffset:0;
+  transition: stroke-dashoffset 0.5s linear, stroke 0.3s ease;
+}
+/* breaks render in the calm cyan used elsewhere for "restful" accents */
+#focus-widget.on-break .pomo-progress{ stroke:rgba(95,232,255,0.85); }
+#focus-widget.on-break #pomoPhase{ color:rgba(95,232,255,0.85); }
+.pomo-center{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:1px;
+}
+#pomoTime{ font-size:17px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+#pomoPhase{ font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); }
+
+.pomo-side{ display:flex; flex-direction:column; gap:6px; flex:1; }
+.pomo-side button{ width:100%; padding:6px 8px; font-size:10.5px; }
+#pomoSettingsBtn{ padding:4px 8px; font-size:11px; opacity:0.75; }
+#pomoSettingsBtn:hover{ opacity:1; }
+
+#pomoSettings{ margin-top:12px; }
+.pomo-setting label{
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11.5px; color:var(--ink-dim); margin-bottom:6px;
+}
+.pomo-setting label span{ display:flex; align-items:center; gap:5px; color:var(--ink-dim); }
+.pomo-setting input{
+  width:44px; background:var(--select-bg); border:1px solid rgba(242,193,78,0.25);
+  border-radius:6px; color:var(--ink); font-family:'Inter',sans-serif;
+  font-size:11.5px; padding:3px 5px; text-align:center;
+}
+
+.pomo-meta{ margin:12px 0 0; }
+#pomoDots{ letter-spacing:3px; color:var(--gold); font-size:9px; vertical-align:1px; }
 
 #links-widget{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:4px; }
 .link-chip{ display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; color:var(--ink-dim); text-decoration:none; }
