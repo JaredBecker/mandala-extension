@@ -229,6 +229,27 @@
     <input type="color" id="bgColorPicker" value="#0a0a0a">
   </div>
 
+  <!-- Depth is only shown by the WebGL renderer (sketch-webgl.js reveals it) -->
+  <div id="depthSection" style="display:none;">
+    <div class="divider"></div>
+    <p class="section-label">Depth</p>
+
+    <div class="control-group">
+      <label>3D depth <span id="depthVal">30</span></label>
+      <input type="range" id="depthAmount" min="0" max="100" value="30">
+    </div>
+
+    <div class="control-group inline">
+      <label><input type="checkbox" id="depthDrift" checked> Ambient camera drift</label>
+    </div>
+
+    <div class="button-row">
+      <button id="resetCameraBtn">Reset camera</button>
+    </div>
+
+    <p class="hint">Hold Shift and drag to tilt the camera &middot; two-finger drag on touch.</p>
+  </div>
+
   <div class="divider"></div>
   <p class="section-label">Renderer</p>
 

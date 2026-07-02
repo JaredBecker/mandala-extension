@@ -14,7 +14,12 @@
       // cost, fine on capable hardware but not something to force on
       // everyone's machine
       doubleIdlePattern: false,
-      cycleBuildSeconds: 60
+      cycleBuildSeconds: 60,
+      // Depth is WebGL-only: perspective tilt strength (0 = flat classic
+      // look) and whether the camera drifts ambiently. Ignored by the p5
+      // renderer.
+      depthAmount: 30,
+      depthDrift: true
     },
     // 'auto' = WebGL with p5 fallback; 'p5' = always the classic canvas
     // renderer. Read by render-loader.js before either sketch is loaded.

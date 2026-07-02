@@ -49,6 +49,38 @@ let hueShift = 0;
 let lastX = null, lastY = null;
 let particles = [];
 
+// ---------- Depth: perspective camera over the art plane ----------
+// The art buffer stays strictly 2D; Depth tilts the PLANE it's shown on.
+// The camera itself never moves — camPitch/camYaw tilt the plane's model
+// transform, which is equivalent and keeps the math small. userPitch/userYaw
+// are the Shift+drag / two-finger set point (session-only, Reset zeroes
+// them); an ambient noise drift scaled by depthAmount breathes on top.
+const CAM_FOV_COT = 3.7321;             // cot(15°) — a 30° vertical FOV
+const TILT_LIMIT = 45;                  // degrees, per axis, user + drift
+let depthAmount = 30;                   // 0 = flat classic look
+let depthDrift = true;
+let userPitch = 0, userYaw = 0;         // degrees
+let camPitch = 0, camYaw = 0;           // radians, effective this frame
+let driftT = Math.random() * 1000;
+let shiftDown = false;                  // Shift pauses drawing, drag tilts
+let tiltDragging = false;
+let tiltLastX = 0, tiltLastY = 0;
+let twoFingerTilt = null;               // {x,y} centroid while 2 fingers down
+
+// basis vectors of the tilted, spun plane: M = Ry(yaw)·Rx(pitch)·Rz(spin).
+// Used identically by the present pass (forward) and the cursor
+// unprojection (inverse), so strokes always land under the pointer.
+function planeBasis(){
+  const a = radians(rotationAngle);
+  const ca = cos(a), sa = sin(a);
+  const cp = cos(camPitch), sp = sin(camPitch);
+  const cy = cos(camYaw), sy = sin(camYaw);
+  return {
+    e1: [ca * cy + sa * sp * sy, sa * cp, -ca * sy + sa * sp * cy],
+    e2: [-sa * cy + ca * sp * sy, ca * cp, sa * sy + ca * sp * cy]
+  };
+}
+
 // while a breathing session is active it temporarily drives rotateSpeed;
 // the panel-driven value is preserved here and restored on exit
 let userRotateSpeed = rotateSpeed;
@@ -273,6 +305,14 @@ let mouseOverUI = false;
 
 function wireInputTracking(){
   window.addEventListener('pointermove', (e) => {
+    if (tiltDragging){
+      // Shift+drag steers the camera instead of painting
+      userYaw = constrain(userYaw + (e.clientX - tiltLastX) * 0.25, -TILT_LIMIT, TILT_LIMIT);
+      userPitch = constrain(userPitch - (e.clientY - tiltLastY) * 0.25, -TILT_LIMIT, TILT_LIMIT);
+      tiltLastX = e.clientX; tiltLastY = e.clientY;
+      lastRealInput = Date.now();
+      return;
+    }
     mouseX = e.clientX; mouseY = e.clientY;
     lastRealInput = Date.now();
     if (idleActive){
@@ -287,6 +327,62 @@ function wireInputTracking(){
   });
   window.addEventListener('touchstart', () => { lastRealInput = Date.now(); }, { passive: true });
 
+  // ---- Depth camera input ----
+  // holding Shift pauses drawing; Shift+drag tilts. Ending either resets
+  // lastX so drawing resumes cleanly from wherever the cursor is then.
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Shift' && !shiftDown){
+      shiftDown = true;
+      lastX = null; lastY = null;
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'Shift'){
+      shiftDown = false;
+      tiltDragging = false;
+      lastX = null; lastY = null;
+    }
+  });
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.shiftKey && e.isPrimary){
+      tiltDragging = true;
+      tiltLastX = e.clientX; tiltLastY = e.clientY;
+    }
+  });
+  window.addEventListener('pointerup', () => {
+    if (tiltDragging){
+      tiltDragging = false;
+      lastX = null; lastY = null;
+    }
+  });
+
+  // two fingers tilt on touch; a single finger keeps painting as before
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2){
+      twoFingerTilt = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+      };
+      lastX = null; lastY = null;
+    }
+  }, { passive: true });
+  canvas.addEventListener('touchmove', (e) => {
+    if (twoFingerTilt && e.touches.length === 2){
+      e.preventDefault();
+      const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      userYaw = constrain(userYaw + (mx - twoFingerTilt.x) * 0.25, -TILT_LIMIT, TILT_LIMIT);
+      userPitch = constrain(userPitch - (my - twoFingerTilt.y) * 0.25, -TILT_LIMIT, TILT_LIMIT);
+      twoFingerTilt = { x: mx, y: my };
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchend', (e) => {
+    if (twoFingerTilt && e.touches.length < 2){
+      twoFingerTilt = null;
+      lastX = null; lastY = null;
+    }
+  }, { passive: true });
+
   // pause drawing while the cursor is over panel/HUD/overlays (see sketch.js)
   document.querySelectorAll('.ui').forEach((el) => {
     el.addEventListener('mouseenter', () => { mouseOverUI = true; });
@@ -299,16 +395,43 @@ function computeBufferSize(){
 }
 
 // maps a screen-space point to the art buffer's un-rotated coordinate space,
-// cancelling out the current display rotation (identical to sketch.js)
+// cancelling out the current display rotation (and, when Depth has the
+// plane tilted, the whole perspective projection)
 function toBufferSpace(x, y){
-  const cx = canvas.width / 2, cy = canvas.height / 2;
-  const dx = x - cx, dy = y - cy;
-  const a = radians(-rotationAngle);
-  const cosA = cos(a), sinA = sin(a);
-  return {
-    x: bufferSize / 2 + dx * cosA - dy * sinA,
-    y: bufferSize / 2 + dx * sinA + dy * cosA
-  };
+  const w = canvas.width, h = canvas.height;
+
+  if (camPitch === 0 && camYaw === 0){
+    // flat: plain 2D inverse rotation, identical to sketch.js
+    const dx = x - w / 2, dy = y - h / 2;
+    const a = radians(-rotationAngle);
+    const cosA = cos(a), sinA = sin(a);
+    return {
+      x: bufferSize / 2 + dx * cosA - dy * sinA,
+      y: bufferSize / 2 + dx * sinA + dy * cosA
+    };
+  }
+
+  // tilted: cast a ray from the camera at (0,0,D) through the pixel and
+  // intersect the tilted plane — solve u·e1 + v·e2 = O + t·d for the
+  // plane-local (u,v) by Cramer's rule
+  const { e1, e2 } = planeBasis();
+  const D = (h / 2) * CAM_FOV_COT;
+  const ndcX = 2 * x / w - 1;
+  const ndcY = 1 - 2 * y / h;
+  const d = [ndcX * (w / h) / CAM_FOV_COT, -ndcY / CAM_FOV_COT, -1];
+
+  const m00 = e1[0], m01 = e2[0], m02 = -d[0];
+  const m10 = e1[1], m11 = e2[1], m12 = -d[1];
+  const m20 = e1[2], m21 = e2[2], m22 = -d[2];
+  const det = m00 * (m11 * m22 - m12 * m21)
+            - m01 * (m10 * m22 - m12 * m20)
+            + m02 * (m10 * m21 - m11 * m20);
+  if (abs(det) < 1e-9){
+    return { x: bufferSize / 2, y: bufferSize / 2 }; // grazing ray; never at our tilt limits
+  }
+  const u = (D * (m01 * m12 - m02 * m11)) / det;
+  const v = (-D * (m00 * m12 - m02 * m10)) / det;
+  return { x: bufferSize / 2 + u, y: bufferSize / 2 + v };
 }
 
 // ---------- WebGL renderer ----------
@@ -388,15 +511,16 @@ precision mediump float;
 varying vec4 vColor;
 void main(){ gl_FragColor = vColor; }`;
 
+// the display quad's clip-space coordinates (with perspective w) are
+// computed on the CPU — four vertices a frame; GL's perspective-correct
+// varying interpolation handles the rest
 const TEX_VS = `
-attribute vec2 aPos;
+attribute vec4 aPos;
 attribute vec2 aUV;
-uniform vec2 uRes;
 varying vec2 vUV;
 void main(){
   vUV = aUV;
-  vec2 clip = aPos / uRes * 2.0 - 1.0;
-  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+  gl_Position = aPos;
 }`;
 
 const TEX_FS = `
@@ -493,7 +617,7 @@ function initGL(){
   capsuleProg = createProgram(CAPSULE_VS, CAPSULE_FS,
     ['aPos', 'aSeg', 'aParam', 'aColor'], ['uRes']);
   flatProg = createProgram(FLAT_VS, FLAT_FS, ['aPos', 'aColor'], ['uRes']);
-  texProg = createProgram(TEX_VS, TEX_FS, ['aPos', 'aUV'], ['uRes', 'uTex']);
+  texProg = createProgram(TEX_VS, TEX_FS, ['aPos', 'aUV'], ['uTex']);
 
   capsuleVBO = gl.createBuffer();
   flatVBO = gl.createBuffer();
@@ -632,12 +756,19 @@ function present(){
   gl.clearColor(r, g, b, 1);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  const cx = w / 2, cy = h / 2;
+  // project the plane's corners through spin + tilt + perspective. The
+  // camera sits at (0,0,D) with D chosen so an untilted plane fills the
+  // viewport at exactly 1 world unit = 1 screen pixel — camPitch/camYaw of
+  // zero therefore reproduces the old flat 2D blit bit-for-bit.
   const half = bufferSize / 2;
-  const aRad = radians(rotationAngle);
-  const ca = cos(aRad), sa = sin(aRad);
-  const corner = (lx, ly, u, v, out) => {
-    out.push(cx + lx * ca - ly * sa, cy + lx * sa + ly * ca, u, v);
+  const { e1, e2 } = planeBasis();
+  const D = (h / 2) * CAM_FOV_COT;
+  const aspect = w / h;
+  const corner = (u, v, s, t, out) => {
+    const wx = u * e1[0] + v * e2[0];
+    const wy = u * e1[1] + v * e2[1];
+    const wz = u * e1[2] + v * e2[2];
+    out.push((CAM_FOV_COT / aspect) * wx, -CAM_FOV_COT * wy, 0, D - wz, s, t);
   };
   const verts = [];
   corner(-half, -half, 0, 0, verts);
@@ -648,17 +779,16 @@ function present(){
   corner(-half, half, 0, 1, verts);
 
   gl.useProgram(texProg.prog);
-  gl.uniform2f(texProg.uniforms.uRes, w, h);
   gl.uniform1i(texProg.uniforms.uTex, 0);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, artTex);
   gl.bindBuffer(gl.ARRAY_BUFFER, texVBO);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.DYNAMIC_DRAW);
-  const stride = 4 * 4;
+  const stride = 6 * 4;
   gl.enableVertexAttribArray(texProg.attribs.aPos);
-  gl.vertexAttribPointer(texProg.attribs.aPos, 2, gl.FLOAT, false, stride, 0);
+  gl.vertexAttribPointer(texProg.attribs.aPos, 4, gl.FLOAT, false, stride, 0);
   gl.enableVertexAttribArray(texProg.attribs.aUV);
-  gl.vertexAttribPointer(texProg.attribs.aUV, 2, gl.FLOAT, false, stride, 8);
+  gl.vertexAttribPointer(texProg.attribs.aUV, 2, gl.FLOAT, false, stride, 16);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   gl.disableVertexAttribArray(texProg.attribs.aPos);
   gl.disableVertexAttribArray(texProg.attribs.aUV);
@@ -677,6 +807,18 @@ function frame(nowMs){
   if (autoRotate){
     rotationAngle = (rotationAngle + rotateSpeed) % 360;
   }
+
+  // effective camera = user tilt + ambient drift, resolved once per frame
+  // BEFORE any strokes so toBufferSpace and present agree on the transform
+  driftT += 0.0016;
+  let driftP = 0, driftY = 0;
+  if (depthDrift && depthAmount > 0){
+    const maxDrift = (depthAmount / 100) * 18;
+    driftP = (noise(driftT) - 0.5) * 2 * maxDrift;
+    driftY = (noise(driftT + 400) - 0.5) * 2 * maxDrift;
+  }
+  camPitch = radians(constrain(userPitch + driftP, -TILT_LIMIT, TILT_LIMIT));
+  camYaw = radians(constrain(userYaw + driftY, -TILT_LIMIT, TILT_LIMIT));
 
   if (trailMode === 'cycle'){
     updateCyclePhase();
@@ -706,7 +848,9 @@ function frame(nowMs){
 
   if (idleActive){
     stepIdleDrawing();
-  } else if (lastX !== null){
+  } else if (lastX !== null && !shiftDown && !twoFingerTilt){
+    // Shift (camera tilt) and two-finger gestures pause drawing entirely;
+    // lastX resets on release so no stroke bridges the gap
     if (!mouseOverUI && (mouseX !== lastX || mouseY !== lastY)){
       drawMandalaStroke(lastX, lastY, mouseX, mouseY);
     }
@@ -950,6 +1094,8 @@ function applyMandalaState(m){
   sparkleDust = m.sparkleDust; $('sparkleDust').checked = sparkleDust;
   idleDraw = m.idleDraw; $('idleDraw').checked = idleDraw;
   doubleIdlePattern = m.doubleIdlePattern; $('doubleIdlePattern').checked = doubleIdlePattern;
+  depthAmount = m.depthAmount; $('depthAmount').value = depthAmount; $('depthVal').textContent = depthAmount;
+  depthDrift = m.depthDrift; $('depthDrift').checked = depthDrift;
 
   $('solidColorGroup').style.display = colourMode === 'solid' ? 'block' : 'none';
   $('paletteGroup').style.display = colourMode === 'solid' ? 'none' : 'block';
@@ -971,7 +1117,7 @@ function currentMandalaState(){
     symmetry, mirror, brushSize, reactToSpeed, colourMode, solidColourHex,
     trailMode, fadeSpeed, cycleBuildSeconds, bgColourHex, palette, glowIntensity, pulseBrush,
     strokeStyleMode, autoRotate, rotateSpeed, chaos, sparkleDust, idleDraw,
-    doubleIdlePattern
+    doubleIdlePattern, depthAmount, depthDrift
   };
 }
 
@@ -1135,6 +1281,17 @@ function wireUpPanel(){
     if (trailMode === 'permanent'){ clearArt(); }
     saveMandalaState();
   });
+
+  // Depth is meaningless on the p5 renderer, so the section only exists
+  // (visually) when this renderer is the one driving the page
+  $('depthSection').style.display = 'block';
+  $('depthAmount').addEventListener('input', (e) => {
+    depthAmount = parseInt(e.target.value, 10);
+    $('depthVal').textContent = depthAmount;
+    saveMandalaState();
+  });
+  $('depthDrift').addEventListener('change', (e) => { depthDrift = e.target.checked; saveMandalaState(); });
+  $('resetCameraBtn').addEventListener('click', () => { userPitch = 0; userYaw = 0; });
 
   $('clearBtn').addEventListener('click', () => { clearArt(); });
   $('saveBtn').addEventListener('click', () => { saveImage(); });
