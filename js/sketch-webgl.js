@@ -256,6 +256,9 @@ function randomCosmeticConfig(){
     rotateSpeed: random(0, 0.25),
     autoRotate: random() > 0.35,
     trailMode: random(['fade', 'permanent', 'cycle']),
+    // how quickly fading trails vanish is part of the look too — short for
+    // laser-like wisps, long for slowly dissolving layers
+    fadeSpeed: floor(random(3, 22)),
     cycleBuildSeconds: floor(random(5, 15))
   };
 }
@@ -264,7 +267,7 @@ function captureCosmeticConfig(){
   return {
     symmetry, mirror, strokeStyleMode, pulseBrush, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
-    autoRotate, trailMode, cycleBuildSeconds, strokeAlpha, rainbowSpeed
+    autoRotate, trailMode, fadeSpeed, cycleBuildSeconds, strokeAlpha, rainbowSpeed
   };
 }
 
@@ -272,7 +275,7 @@ function applyCosmeticConfig(cfg){
   ({
     symmetry, mirror, strokeStyleMode, pulseBrush, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
-    autoRotate, trailMode, cycleBuildSeconds, strokeAlpha, rainbowSpeed
+    autoRotate, trailMode, fadeSpeed, cycleBuildSeconds, strokeAlpha, rainbowSpeed
   } = cfg);
   if (trailMode === 'cycle') resetCyclePhase();
 }

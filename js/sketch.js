@@ -141,6 +141,9 @@ function randomCosmeticConfig(){
     // idle drawing fades like a laser, sometimes it builds up permanently,
     // sometimes it breathes between the two (cycle mode)
     trailMode: random(['fade', 'permanent', 'cycle']),
+    // how quickly fading trails vanish is part of the look too — short for
+    // laser-like wisps, long for slowly dissolving layers
+    fadeSpeed: floor(random(3, 22)),
     // cycle mode's build time defaults to 60s for manual use, but the idle
     // shuffle re-rolls everything every 10s — at 60s it would almost never
     // survive long enough to reach its own fade phase, so it'd just sit in
@@ -154,7 +157,7 @@ function captureCosmeticConfig(){
   return {
     symmetry, mirror, strokeStyleMode, pulseBrush, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
-    autoRotate, trailMode, cycleBuildSeconds, strokeAlpha, rainbowSpeed
+    autoRotate, trailMode, fadeSpeed, cycleBuildSeconds, strokeAlpha, rainbowSpeed
   };
 }
 
@@ -162,7 +165,7 @@ function applyCosmeticConfig(cfg){
   ({
     symmetry, mirror, strokeStyleMode, pulseBrush, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
-    autoRotate, trailMode, cycleBuildSeconds, strokeAlpha, rainbowSpeed
+    autoRotate, trailMode, fadeSpeed, cycleBuildSeconds, strokeAlpha, rainbowSpeed
   } = cfg);
   if (trailMode === 'cycle') resetCyclePhase();
 }
