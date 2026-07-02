@@ -7,6 +7,10 @@
   let todos = [];
   const collapsed = new Set(); // dates the user has collapsed/expanded away from default
   let soundState = { volume: 50, muted: false };
+  // two-tap inline confirm for "Clear" (no native confirm() popup): first
+  // click arms it ("Sure?"), second click within 3s clears, then it reverts
+  let confirmClearDate = null;
+  let confirmClearTimer = null;
 
   // Web Audio API instead of <audio>/new Audio() — HTMLMediaElement playback
   // registers with the OS/browser media session and briefly pops up a
@@ -80,10 +84,11 @@
 
       const header = document.createElement('div');
       header.className = 'todo-date-header';
+      const clearing = confirmClearDate === date;
       header.innerHTML = `
         <span class="todo-date-label">${formatDateLabel(date)}</span>
         <span class="todo-date-actions">
-          <button class="todo-clear-btn" title="Clear this day">Clear</button>
+          <button class="todo-clear-btn${clearing ? ' danger' : ''}" title="Clear this day">${clearing ? 'Sure?' : 'Clear'}</button>
           <span class="todo-chevron">${isCollapsed(date) ? '▸' : '▾'}</span>
         </span>
       `;
@@ -93,9 +98,15 @@
         render();
       });
       header.querySelector('.todo-clear-btn').addEventListener('click', () => {
-        if (!confirm(`Clear all tasks from ${formatDateLabel(date)}?`)) return;
-        todos = todos.filter((t) => t.date !== date);
-        persist();
+        clearTimeout(confirmClearTimer);
+        if (confirmClearDate === date){
+          confirmClearDate = null;
+          todos = todos.filter((t) => t.date !== date);
+          persist();
+        } else {
+          confirmClearDate = date;
+          confirmClearTimer = setTimeout(() => { confirmClearDate = null; render(); }, 3000);
+        }
         render();
       });
 

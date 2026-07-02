@@ -23,4 +23,23 @@ html, body{
 
 a{ color: inherit; }
 
+/* native number spinners don't belong on the glass panel — the pomodoro
+   fields are quick type-in boxes, not step-by-one controls */
+input[type="number"]{ appearance:textfield; -moz-appearance:textfield; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+
+/* one deliberate focus style everywhere instead of the browser default ring */
+.ui button:focus-visible, .ui a:focus-visible, .ui input:focus-visible,
+.ui select:focus-visible, .ui textarea:focus-visible{
+  outline:1px solid var(--gold); outline-offset:2px;
+}
+
 @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+@media (prefers-reduced-motion: reduce){
+  .panel-glyph{ animation:none; }
+  #panel, #todo-widget, #panel-toggle, #todo-toggle,
+  .pomo-progress, .strike-line, .breath-ring{ transition:none !important; }
+  .todo-date-items li.just-checked{ animation:none; }
+}

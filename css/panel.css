@@ -120,6 +120,10 @@ button:hover{ background:rgba(242,193,78,0.2); }
 #randomBtn{ border-color: rgba(255,62,148,0.4); background:rgba(255,62,148,0.1); }
 #randomBtn:hover{ background:rgba(255,62,148,0.22); }
 
+/* destructive/confirm actions pick up the magenta accent */
+button.danger{ border-color:rgba(255,62,148,0.45); background:rgba(255,62,148,0.12); color:#ffd7e8; }
+button.danger:hover{ background:rgba(255,62,148,0.25); }
+
 .hint{ font-size:11px; color:var(--ink-dim); line-height:1.5; margin:8px 0 0; }
 
 #site-credit{
