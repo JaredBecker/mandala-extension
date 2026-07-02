@@ -16,6 +16,9 @@
       doubleIdlePattern: false,
       cycleBuildSeconds: 60
     },
+    // 'auto' = WebGL with p5 fallback; 'p5' = always the classic canvas
+    // renderer. Read by render-loader.js before either sketch is loaded.
+    renderer: 'auto',
     panelCollapsed: true,
     todoCollapsed: false,
     todos: [],

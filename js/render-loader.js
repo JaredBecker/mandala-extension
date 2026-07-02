@@ -58,7 +58,17 @@
   }
 
   async function boot(){
-    if (forced !== 'p5' && webglAvailable()){
+    // priority: URL override (dev) > stored setting > auto. storage.js is
+    // loaded before this script, and a storage failure just means 'auto'.
+    let pref = forced;
+    if (!pref){
+      try {
+        pref = (await MandalaStorage.load()).renderer;
+      } catch (e){
+        pref = 'auto';
+      }
+    }
+    if (pref !== 'p5' && webglAvailable()){
       try {
         await loadScript('js/sketch-webgl.js');
         // start() does all GL setup up front and returns false (after

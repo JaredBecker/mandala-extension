@@ -4,9 +4,23 @@
 
   // render-loader.js picks the WebGL or p5 renderer; wait until the chosen
   // sketch's globals (applyMandalaState etc.) exist before using them
+  let activeRenderer = null;
   if (window.rendererReady){
-    await window.rendererReady.catch(() => {});
+    activeRenderer = await window.rendererReady.catch(() => null);
   }
+
+  // the renderer preference is wired here (not in the sketches) because it
+  // must work identically whichever renderer actually loaded
+  const rendererSelect = document.getElementById('rendererSelect');
+  const rendererHint = document.getElementById('rendererHint');
+  rendererSelect.value = state.renderer || 'auto';
+  if (activeRenderer){
+    rendererHint.textContent = 'Now drawing with ' + (activeRenderer === 'webgl' ? 'WebGL.' : 'p5.js.');
+  }
+  rendererSelect.addEventListener('change', () => {
+    MandalaStorage.patch('renderer', rendererSelect.value);
+    rendererHint.textContent = 'Saved — takes effect on your next new tab.';
+  });
 
   document.getElementById('panel').classList.toggle('collapsed', state.panelCollapsed);
 
