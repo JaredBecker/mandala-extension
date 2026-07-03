@@ -790,7 +790,19 @@ const PRESETS = {
   neon: { symmetry: 16, mirror: true, strokeStyleMode: 'line', colourMode: 'rainbow', palette: 'full', glowIntensity: 18, trailMode: 'fade', fadeSpeed: 10 },
   gold: { symmetry: 8, mirror: true, strokeStyleMode: 'ribbon', colourMode: 'solid', solidColourHex: '#f2c14e', glowIntensity: 14, trailMode: 'permanent' },
   ocean: { symmetry: 24, mirror: false, strokeStyleMode: 'dots', colourMode: 'gradient', palette: 'ocean', glowIntensity: 12, trailMode: 'fade', fadeSpeed: 6 },
-  chaosBloom: { symmetry: 10, mirror: true, strokeStyleMode: 'sparkle', colourMode: 'rainbow', palette: 'sunset', glowIntensity: 20, trailMode: 'fade', fadeSpeed: 14 }
+  chaosBloom: { symmetry: 10, mirror: true, strokeStyleMode: 'sparkle', colourMode: 'rainbow', palette: 'sunset', glowIntensity: 20, trailMode: 'fade', fadeSpeed: 14 },
+  // twinkling champagne stars that pulse and shed dust
+  stardust: { symmetry: 20, mirror: true, strokeStyleMode: 'sparkle', colourMode: 'solid', solidColourHex: '#fff3c4', brushSize: 2, glowIntensity: 24, strokeAlpha: 100, sparkleDust: true, pulseBrush: true, trailMode: 'fade', fadeSpeed: 4, autoRotate: true, rotateSpeed: 0.08 },
+  // thin fast-cycling beams, quick fade, fast spin — a light show
+  laserRave: { symmetry: 8, mirror: true, strokeStyleMode: 'line', colourMode: 'rainbow', palette: 'full', rainbowSpeed: 3, brushSize: 2, glowIntensity: 26, strokeAlpha: 100, reactToSpeed: true, pulseBrush: false, sparkleDust: false, trailMode: 'fade', fadeSpeed: 32, autoRotate: true, rotateSpeed: 1.2 },
+  // hairline pale strokes that build forever, no glow, no spin — etching
+  zenInk: { symmetry: 6, mirror: true, strokeStyleMode: 'line', colourMode: 'solid', solidColourHex: '#f4f1ea', brushSize: 1, glowIntensity: 0, strokeAlpha: 55, reactToSpeed: false, pulseBrush: false, sparkleDust: false, trailMode: 'permanent', autoRotate: false },
+  // wide translucent green curtains that linger and breathe
+  aurora: { symmetry: 4, mirror: true, strokeStyleMode: 'ribbon', colourMode: 'gradient', palette: 'forest', brushSize: 9, glowIntensity: 16, strokeAlpha: 60, pulseBrush: true, sparkleDust: false, trailMode: 'fade', fadeSpeed: 3, autoRotate: true, rotateSpeed: 0.1 },
+  // warm green-gold motes drifting with dust trails
+  fireflies: { symmetry: 12, mirror: false, strokeStyleMode: 'dots', colourMode: 'gradient', palette: 'forest', brushSize: 3, glowIntensity: 22, strokeAlpha: 85, pulseBrush: true, sparkleDust: true, trailMode: 'fade', fadeSpeed: 7, autoRotate: true, rotateSpeed: 0.15 },
+  // fat pastel candy dots that build up and melt away in cycles
+  bubblegum: { symmetry: 14, mirror: true, strokeStyleMode: 'dots', colourMode: 'rainbow', palette: 'sunset', rainbowSpeed: 1.4, brushSize: 11, glowIntensity: 8, strokeAlpha: 70, pulseBrush: true, sparkleDust: false, trailMode: 'cycle', autoRotate: true, rotateSpeed: 0.25 }
 };
 
 function applyPreset(name){
@@ -819,6 +831,17 @@ function applyPreset(name){
     if (trailMode === 'cycle') resetCyclePhase();
   }
   if (p.fadeSpeed !== undefined){ fadeSpeed = p.fadeSpeed; $('fadeSpeed').value = fadeSpeed; $('fadeVal').textContent = fadeSpeed; }
+  if (p.brushSize !== undefined){ brushSize = p.brushSize; $('brush').value = brushSize; $('brushVal').textContent = brushSize; }
+  if (p.pulseBrush !== undefined){ pulseBrush = p.pulseBrush; $('pulseBrush').checked = pulseBrush; }
+  if (p.sparkleDust !== undefined){ sparkleDust = p.sparkleDust; $('sparkleDust').checked = sparkleDust; }
+  if (p.reactToSpeed !== undefined){ reactToSpeed = p.reactToSpeed; $('reactSpeed').checked = reactToSpeed; }
+  if (p.strokeAlpha !== undefined){ strokeAlpha = p.strokeAlpha; $('strokeAlpha').value = strokeAlpha; $('strokeAlphaVal').textContent = strokeAlpha; }
+  if (p.rainbowSpeed !== undefined){ rainbowSpeed = p.rainbowSpeed; $('rainbowSpeed').value = rainbowSpeed; $('rainbowSpeedVal').textContent = rainbowSpeed.toFixed(1); }
+  if (p.autoRotate !== undefined){ autoRotate = p.autoRotate; $('autoRotate').checked = autoRotate; $('rotateGroup').style.display = autoRotate ? 'block' : 'none'; }
+  if (p.rotateSpeed !== undefined){
+    rotateSpeed = p.rotateSpeed; userRotateSpeed = rotateSpeed;
+    $('rotateSpeed').value = rotateSpeed; $('rotateVal').textContent = rotateSpeed.toFixed(2);
+  }
   saveMandalaState();
 }
 
@@ -975,6 +998,12 @@ function wireUpPanel(){
   $('presetGold').addEventListener('click', () => applyPreset('gold'));
   $('presetOcean').addEventListener('click', () => applyPreset('ocean'));
   $('presetChaos').addEventListener('click', () => applyPreset('chaosBloom'));
+  $('presetStardust').addEventListener('click', () => applyPreset('stardust'));
+  $('presetRave').addEventListener('click', () => applyPreset('laserRave'));
+  $('presetInk').addEventListener('click', () => applyPreset('zenInk'));
+  $('presetAurora').addEventListener('click', () => applyPreset('aurora'));
+  $('presetFirefly').addEventListener('click', () => applyPreset('fireflies'));
+  $('presetCandy').addEventListener('click', () => applyPreset('bubblegum'));
 }
 
 function randomizeSettings($){
