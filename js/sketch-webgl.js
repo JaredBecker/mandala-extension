@@ -237,30 +237,57 @@ let idleSpeedT = 0;
 let idlePrevConfig = null;
 let idleConfigTimer = null;
 
+// what the Ambient tab allows the shuffle to change; replaced with the
+// stored preferences by main.js via applyAmbientState
+let ambient = {
+  randomize: {
+    symmetry: true, brush: true, strokeStyle: true, pulseBrush: true,
+    colours: true, glow: true, strokeAlpha: true, rotation: true,
+    reactToSpeed: true, sparkleDust: true, trails: true
+  },
+  symmetryMin: 6, symmetryMax: 26,
+  brushMin: 1, brushMax: 12,
+  glowMin: 4, glowMax: 24,
+  patterns: IDLE_PATH_ALGORITHMS.slice()
+};
+window.applyAmbientState = (a) => { ambient = a; };
+
+// builds the next ambient look. Starts from the USER's config (captured
+// when ambient mode began — not the previous roll) and only re-rolls what
+// the Ambient tab allows, inside its limits, so anything unticked keeps
+// the user's own setting.
 function randomCosmeticConfig(){
-  return {
-    symmetry: floor(random(6, 27)),
-    mirror: true,
-    strokeStyleMode: random(['line', 'ribbon', 'dots', 'sparkle']),
-    pulseBrush: random() > 0.5,
-    colourMode: random(['rainbow', 'gradient', 'solid']),
-    // kept above 55 so ambient art never looks washed out on the shuffle
-    strokeAlpha: floor(random(55, 101)),
-    rainbowSpeed: random(0.3, 1.5),
-    palette: random(['full', 'sunset', 'ocean', 'forest', 'mono']),
-    solidColourHex: hsbToHex(random(360), 75, 100),
-    glowIntensity: floor(random(4, 24)),
-    brushSize: floor(random(1, 21)),
-    reactToSpeed: random() > 0.3,
-    sparkleDust: random() > 0.6,
-    rotateSpeed: random(0, 0.25),
-    autoRotate: random() > 0.35,
-    trailMode: random(['fade', 'permanent', 'cycle']),
-    // how quickly fading trails vanish is part of the look too — short for
-    // laser-like wisps, long for slowly dissolving layers
-    fadeSpeed: floor(random(3, 22)),
-    cycleBuildSeconds: floor(random(5, 15))
-  };
+  const cfg = Object.assign({}, idlePrevConfig || captureCosmeticConfig());
+  const R = ambient.randomize;
+  const span = (lo, hi) => floor(random(min(lo, hi), max(lo, hi) + 1));
+  cfg.mirror = true;
+  if (R.symmetry) cfg.symmetry = span(ambient.symmetryMin, ambient.symmetryMax);
+  if (R.strokeStyle) cfg.strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle']);
+  if (R.pulseBrush) cfg.pulseBrush = random() > 0.5;
+  if (R.colours){
+    cfg.colourMode = random(['rainbow', 'gradient', 'solid']);
+    cfg.palette = random(['full', 'sunset', 'ocean', 'forest', 'mono']);
+    cfg.solidColourHex = hsbToHex(random(360), 75, 100);
+    cfg.rainbowSpeed = random(0.3, 1.5);
+  }
+  // kept above 55 so ambient art never looks washed out on the shuffle
+  if (R.strokeAlpha) cfg.strokeAlpha = floor(random(55, 101));
+  if (R.glow) cfg.glowIntensity = span(ambient.glowMin, ambient.glowMax);
+  if (R.brush) cfg.brushSize = span(ambient.brushMin, ambient.brushMax);
+  if (R.reactToSpeed) cfg.reactToSpeed = random() > 0.3;
+  if (R.sparkleDust) cfg.sparkleDust = random() > 0.6;
+  if (R.rotation){
+    cfg.rotateSpeed = random(0, 0.25);
+    cfg.autoRotate = random() > 0.35;
+  }
+  if (R.trails){
+    cfg.trailMode = random(['fade', 'permanent', 'cycle']);
+    cfg.fadeSpeed = floor(random(3, 22));
+    // short build time so cycle mode reaches its fade phase within a
+    // shuffle window instead of just looking like permanent mode
+    cfg.cycleBuildSeconds = floor(random(5, 15));
+  }
+  return cfg;
 }
 
 function captureCosmeticConfig(){
@@ -281,14 +308,17 @@ function applyCosmeticConfig(cfg){
 }
 
 function pickIdlePathAlgorithms(){
+  // only pick from patterns the Ambient tab has enabled (fall back to all
+  // of them if every single one has been unticked)
+  const pool = (ambient.patterns && ambient.patterns.length) ? ambient.patterns : IDLE_PATH_ALGORITHMS;
   const penCount = doubleIdlePattern ? 2 : 1;
   const chosen = [];
   idlePens = [];
   for (let i = 0; i < penCount; i++){
     let algorithm;
     do {
-      algorithm = random(IDLE_PATH_ALGORITHMS);
-    } while (chosen.includes(algorithm) && chosen.length < IDLE_PATH_ALGORITHMS.length);
+      algorithm = random(pool);
+    } while (chosen.includes(algorithm) && chosen.length < pool.length);
     chosen.push(algorithm);
     idlePens.push({ x: null, y: null, dirAngle: random(TWO_PI), pulseT: 0, algorithm });
   }

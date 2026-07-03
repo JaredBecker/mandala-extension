@@ -28,6 +28,20 @@
     // 'auto' = WebGL with p5 fallback; 'p5' = always the classic canvas
     // renderer. Read by render-loader.js before either sketch is loaded.
     renderer: 'auto',
+    // what ambient (auto-draw) mode may randomize: anything switched off in
+    // `randomize` keeps the user's own setting; numeric limits bound the
+    // rolls; `patterns` is the pool of idle path algorithms it may pick
+    ambient: {
+      randomize: {
+        symmetry: true, brush: true, strokeStyle: true, pulseBrush: true,
+        colours: true, glow: true, strokeAlpha: true, rotation: true,
+        reactToSpeed: true, sparkleDust: true, trails: true
+      },
+      symmetryMin: 6, symmetryMax: 26,
+      brushMin: 1, brushMax: 12,
+      glowMin: 4, glowMax: 24,
+      patterns: ['rose', 'spiral', 'lissajous', 'drift', 'epicycle', 'lemniscate', 'wave']
+    },
     panelCollapsed: true,
     todoCollapsed: false,
     todos: [],

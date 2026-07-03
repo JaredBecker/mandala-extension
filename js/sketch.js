@@ -114,43 +114,59 @@ let idleConfigTimer = null;
 // every shape/color/brush/motion option (everything except canvas-level
 // stuff like trail mode and background) gets shuffled every
 // IDLE_CONFIG_INTERVAL_MS while idle, then handed back exactly as it was
+// what the Ambient tab allows the shuffle to change; replaced with the
+// stored preferences by main.js via applyAmbientState
+let ambient = {
+  randomize: {
+    symmetry: true, brush: true, strokeStyle: true, pulseBrush: true,
+    colours: true, glow: true, strokeAlpha: true, rotation: true,
+    reactToSpeed: true, sparkleDust: true, trails: true
+  },
+  symmetryMin: 6, symmetryMax: 26,
+  brushMin: 1, brushMax: 12,
+  glowMin: 4, glowMax: 24,
+  patterns: IDLE_PATH_ALGORITHMS.slice()
+};
+window.applyAmbientState = (a) => { ambient = a; };
+
+// builds the next ambient look. Starts from the USER's config (captured
+// when ambient mode began — not the previous roll) and only re-rolls what
+// the Ambient tab allows, inside its limits, so anything unticked keeps
+// the user's own setting.
 function randomCosmeticConfig(){
-  return {
-    // kept to a moderate range and mirror always on — very high symmetry
-    // counts blur together into a smooth ring at a glance, which reads as
-    // "circle" rather than a mandala with distinct petals/arms
-    symmetry: floor(random(6, 27)),
-    mirror: true,
-    strokeStyleMode: random(['line', 'ribbon', 'dots', 'sparkle']),
-    pulseBrush: random() > 0.5,
-    colourMode: random(['rainbow', 'gradient', 'solid']),
-    // kept above 55 so ambient art never looks washed out on the shuffle
-    strokeAlpha: floor(random(55, 101)),
-    rainbowSpeed: random(0.3, 1.5),
-    palette: random(['full', 'sunset', 'ocean', 'forest', 'mono']),
-    solidColourHex: color(random(360), 75, 100).toString('#rrggbb'),
-    glowIntensity: floor(random(4, 24)),
-    brushSize: floor(random(1, 21)),
-    reactToSpeed: random() > 0.3,
-    sparkleDust: random() > 0.6,
-    rotateSpeed: random(0, 0.25),
-    // spinning isn't just faster/slower now — it can stop entirely for a
-    // stretch too, so a 10s window might spin fast, sit still, spin again
-    autoRotate: random() > 0.35,
-    // trail behaviour itself is now part of the shuffle too — sometimes
-    // idle drawing fades like a laser, sometimes it builds up permanently,
-    // sometimes it breathes between the two (cycle mode)
-    trailMode: random(['fade', 'permanent', 'cycle']),
-    // how quickly fading trails vanish is part of the look too — short for
-    // laser-like wisps, long for slowly dissolving layers
-    fadeSpeed: floor(random(3, 22)),
-    // cycle mode's build time defaults to 60s for manual use, but the idle
-    // shuffle re-rolls everything every 10s — at 60s it would almost never
-    // survive long enough to reach its own fade phase, so it'd just sit in
-    // "building" the whole window and look identical to permanent mode.
-    // A short, idle-specific build time means it actually gets to fade.
-    cycleBuildSeconds: floor(random(5, 15))
-  };
+  const cfg = Object.assign({}, idlePrevConfig || captureCosmeticConfig());
+  const R = ambient.randomize;
+  const span = (lo, hi) => floor(random(min(lo, hi), max(lo, hi) + 1));
+  cfg.mirror = true; // always on — unmirrored ambient art reads as scribble
+  if (R.symmetry) cfg.symmetry = span(ambient.symmetryMin, ambient.symmetryMax);
+  if (R.strokeStyle) cfg.strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle']);
+  if (R.pulseBrush) cfg.pulseBrush = random() > 0.5;
+  if (R.colours){
+    cfg.colourMode = random(['rainbow', 'gradient', 'solid']);
+    cfg.palette = random(['full', 'sunset', 'ocean', 'forest', 'mono']);
+    cfg.solidColourHex = color(random(360), 75, 100).toString('#rrggbb');
+    cfg.rainbowSpeed = random(0.3, 1.5);
+  }
+  // kept above 55 so ambient art never looks washed out on the shuffle
+  if (R.strokeAlpha) cfg.strokeAlpha = floor(random(55, 101));
+  if (R.glow) cfg.glowIntensity = span(ambient.glowMin, ambient.glowMax);
+  if (R.brush) cfg.brushSize = span(ambient.brushMin, ambient.brushMax);
+  if (R.reactToSpeed) cfg.reactToSpeed = random() > 0.3;
+  if (R.sparkleDust) cfg.sparkleDust = random() > 0.6;
+  if (R.rotation){
+    // spinning isn't just faster/slower — it can stop entirely for a
+    // stretch too, so a shuffle window might spin fast, sit still, spin again
+    cfg.rotateSpeed = random(0, 0.25);
+    cfg.autoRotate = random() > 0.35;
+  }
+  if (R.trails){
+    cfg.trailMode = random(['fade', 'permanent', 'cycle']);
+    cfg.fadeSpeed = floor(random(3, 22));
+    // short build time so cycle mode reaches its fade phase within a
+    // shuffle window instead of just looking like permanent mode
+    cfg.cycleBuildSeconds = floor(random(5, 15));
+  }
+  return cfg;
 }
 
 function captureCosmeticConfig(){
@@ -173,17 +189,19 @@ function applyCosmeticConfig(cfg){
 function pickIdlePathAlgorithms(){
   // different algorithms compute wildly different positions, so a fresh
   // pen (null position) avoids drawing one straight streak connecting the
-  // old shape to the new one
+  // old shape to the new one. Only pick from patterns the Ambient tab has
+  // enabled (fall back to all if every single one has been unticked).
+  const pool = (ambient.patterns && ambient.patterns.length) ? ambient.patterns : IDLE_PATH_ALGORITHMS;
   const penCount = doubleIdlePattern ? 2 : 1;
   const chosen = [];
   idlePens = [];
   for (let i = 0; i < penCount; i++){
     let algorithm;
     do {
-      algorithm = random(IDLE_PATH_ALGORITHMS);
+      algorithm = random(pool);
       // prefer distinct algorithms across pens for more visual variety —
       // but don't loop forever if the pool is smaller than the pen count
-    } while (chosen.includes(algorithm) && chosen.length < IDLE_PATH_ALGORITHMS.length);
+    } while (chosen.includes(algorithm) && chosen.length < pool.length);
     chosen.push(algorithm);
     idlePens.push({ x: null, y: null, dirAngle: random(TWO_PI), pulseT: 0, algorithm });
   }

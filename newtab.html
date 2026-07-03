@@ -55,6 +55,7 @@
   <div class="panel-tabs">
     <button class="tab-btn active" data-tab="tools">Tools</button>
     <button class="tab-btn" data-tab="customize">Customize</button>
+    <button class="tab-btn" data-tab="ambient">Ambient</button>
   </div>
 
   <div class="tab-content active" id="tab-tools">
@@ -166,24 +167,6 @@
   <div class="control-group" id="rotateGroup" style="display:block;">
     <label>Rotate speed <span id="rotateVal">0.15</span></label>
     <input type="range" id="rotateSpeed" min="0.05" max="2" step="0.05" value="0.15">
-  </div>
-
-  <div class="control-group inline">
-    <label><input type="checkbox" id="idleDraw" checked> Draw on its own when idle</label>
-  </div>
-
-  <div class="control-group inline">
-    <label><input type="checkbox" id="doubleIdlePattern"> Draw two patterns at once when idle</label>
-  </div>
-
-  <div class="control-group">
-    <label>Ambient pace <span id="idlePaceVal">100%</span></label>
-    <input type="range" id="idlePace" min="30" max="200" step="5" value="100">
-  </div>
-
-  <div class="control-group">
-    <label>Ambient style change <span id="idleShuffleVal">10s</span></label>
-    <input type="range" id="idleShuffleSeconds" min="5" max="30" step="1" value="10">
   </div>
 
   <div class="divider"></div>
@@ -308,6 +291,83 @@
   </div>
   <div class="button-row">
     <button id="randomBtn">&#127922; Surprise me</button>
+  </div>
+
+  </div>
+
+  <div class="tab-content" id="tab-ambient">
+
+  <p class="section-label">Ambient drawing</p>
+  <p class="hint" style="margin:0 0 14px;">When you stop moving, the mandala draws itself and re-rolls a random look as it goes. This tab decides what it's allowed to do.</p>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="idleDraw" checked> Draw on its own when idle</label>
+  </div>
+
+  <div class="control-group inline">
+    <label><input type="checkbox" id="doubleIdlePattern"> Draw two patterns at once when idle</label>
+  </div>
+
+  <div class="control-group">
+    <label>Ambient pace <span id="idlePaceVal">100%</span></label>
+    <input type="range" id="idlePace" min="30" max="200" step="5" value="100">
+  </div>
+
+  <div class="control-group">
+    <label>Ambient style change <span id="idleShuffleVal">10s</span></label>
+    <input type="range" id="idleShuffleSeconds" min="5" max="30" step="1" value="10">
+  </div>
+
+  <div class="divider"></div>
+  <p class="section-label">It may randomize</p>
+  <p class="hint" style="margin:0 0 12px;">Anything unticked keeps the setting you chose in Customize.</p>
+
+  <div class="ambient-grid">
+    <label><input type="checkbox" id="ambSymmetry" checked> Symmetry</label>
+    <label><input type="checkbox" id="ambBrush" checked> Brush size</label>
+    <label><input type="checkbox" id="ambStrokeStyle" checked> Stroke style</label>
+    <label><input type="checkbox" id="ambPulse" checked> Pulse brush</label>
+    <label><input type="checkbox" id="ambColours" checked> Colors</label>
+    <label><input type="checkbox" id="ambGlow" checked> Glow</label>
+    <label><input type="checkbox" id="ambAlpha" checked> Opacity</label>
+    <label><input type="checkbox" id="ambRotation" checked> Rotation</label>
+    <label><input type="checkbox" id="ambReact" checked> Speed react</label>
+    <label><input type="checkbox" id="ambSparkle" checked> Sparkle dust</label>
+    <label><input type="checkbox" id="ambTrails" checked> Trails &amp; fade</label>
+  </div>
+
+  <div class="divider"></div>
+  <p class="section-label">Limits</p>
+
+  <div class="control-group">
+    <label>Symmetry <span><span id="ambSymMinVal">6</span>&ndash;<span id="ambSymMaxVal">26</span></span></label>
+    <input type="range" id="ambSymMin" min="2" max="60" value="6">
+    <input type="range" id="ambSymMax" min="2" max="60" value="26">
+  </div>
+
+  <div class="control-group">
+    <label>Brush size <span><span id="ambBrushMinVal">1</span>&ndash;<span id="ambBrushMaxVal">12</span></span></label>
+    <input type="range" id="ambBrushMin" min="1" max="20" value="1">
+    <input type="range" id="ambBrushMax" min="1" max="20" value="12">
+  </div>
+
+  <div class="control-group">
+    <label>Glow <span><span id="ambGlowMinVal">4</span>&ndash;<span id="ambGlowMaxVal">24</span></span></label>
+    <input type="range" id="ambGlowMin" min="0" max="30" value="4">
+    <input type="range" id="ambGlowMax" min="0" max="30" value="24">
+  </div>
+
+  <div class="divider"></div>
+  <p class="section-label">Patterns</p>
+
+  <div class="ambient-grid">
+    <label><input type="checkbox" data-pattern="rose" checked> Rose</label>
+    <label><input type="checkbox" data-pattern="spiral" checked> Spiral</label>
+    <label><input type="checkbox" data-pattern="lissajous" checked> Lissajous</label>
+    <label><input type="checkbox" data-pattern="drift" checked> Drift</label>
+    <label><input type="checkbox" data-pattern="epicycle" checked> Spirograph</label>
+    <label><input type="checkbox" data-pattern="lemniscate" checked> Figure-eight</label>
+    <label><input type="checkbox" data-pattern="wave" checked> Waves</label>
   </div>
 
   </div>
