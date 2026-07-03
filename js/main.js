@@ -200,7 +200,7 @@
       symmetry: 6 + Math.floor(rnd() * 21),
       mirror: true,
       symmetryMode: pick(['radial', 'radial', 'kaleido', 'spiral']),
-      strokeStyleMode: pick(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed']),
+      strokeStyleMode: pick(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed', 'silk']),
       colourMode: pick(['rainbow', 'gradient']),
       palette: pick(['full', 'sunset', 'ocean', 'forest', 'mono']),
       brushSize: 2 + Math.floor(rnd() * 9),

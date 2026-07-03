@@ -49,7 +49,7 @@
       glowMin: 4, glowMax: 24,
       // stroke styles the shuffle may pick; empty = keep the user's style
       styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals',
-               'taper', 'chalk', 'dashed'],
+               'taper', 'chalk', 'dashed', 'silk'],
       patterns: ['rose', 'spiral', 'lissajous', 'drift', 'epicycle', 'lemniscate', 'wave'],
       // gallery mode: ambient builds a piece for gallerySeconds, dissolves
       // it, restyles, and begins a new one

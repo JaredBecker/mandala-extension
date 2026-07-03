@@ -54,6 +54,26 @@ let hueShift = 0;
 let lastX = null, lastY = null;
 let particles = [];
 
+// ---------- silk wisps (after weavesilk.com) ----------
+// The pointer lays points into a rope; every frame the rope is nudged by a
+// Perlin-noise force field and the WHOLE rope is redrawn several times at
+// very low alpha with additive blending. The smoke sheets are hundreds of
+// ghost copies of the rope accumulating as the noise wiggles it — density,
+// not blur, makes the glow. (Numbers mirror sketch.js — keep in sync.)
+const SILK_STEPS_PER_FRAME = 3; // physics+draw passes per frame (ghost density)
+const SILK_POINT_LIFE = 100;    // steps a rope point lives after being laid
+const SILK_MAX_ROPE_POINTS = 120; // hard cap so a rope can't grow unbounded
+const SILK_MAX_ROPES = 6;         // mouse + idle pens + a couple of leftovers
+const SILK_FRICTION = 0.975;      // carries constraint corrections, like silk cloth
+const SILK_RIGIDITY = 0.2;        // neighbour pull-together per step
+const SILK_NOISE_SPACE = 0.02;    // noise field scale per buffer px
+const SILK_NOISE_TIME = 0.004;    // 2D noise here: time drifts the sample point
+const SILK_NOISE_ANGLE = 5 * PI;  // noise value -> force angle sweep
+const SILK_IVEL_FORCE = 0.3;      // launch push from the cursor's velocity
+const SILK_IVEL_DECAY = 0.98;
+let silkRopes = [];  // { pts: [{x,y,px,py,ivx,ivy,life}], lastInX, lastInY }
+let silkTime = 0;    // physics step counter driving the noise field drift
+
 // screen-space endpoints of last frame's strokes: a stroke whose start
 // matches one of them is a continuation, so its start cap gets subtracted
 // in the shader instead of double-blending over the previous end cap
@@ -299,7 +319,7 @@ let ambient = {
   symmetryMin: 6, symmetryMax: 26,
   brushMin: 1, brushMax: 12,
   glowMin: 4, glowMax: 24,
-  styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed'],
+  styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed', 'silk'],
   patterns: IDLE_PATH_ALGORITHMS.slice(),
   gallery: false,
   gallerySeconds: 45
@@ -572,6 +592,9 @@ let artTex = null, artFBO = null;
 // per-frame geometry batches (plain arrays; a few hundred floats a frame)
 let capsuleVerts = [];
 let flatVerts = [];
+// silk gets its own capsule batch: it must blend ADDITIVELY (that stacking
+// is the whole smoke effect) while everything else stays source-over
+let silkVerts = [];
 
 const CAPSULE_VS = `
 attribute vec2 aPos;
@@ -791,6 +814,7 @@ function clearArt(){
   gl.clearColor(r, g, b, 1);
   gl.clear(gl.COLOR_BUFFER_BIT);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  silkRopes = []; // live ropes would redraw ghosts onto the fresh canvas
 }
 
 // geometry emitters — everything lands in this frame's batch arrays and is
@@ -800,7 +824,7 @@ function clearArt(){
 // cap = 1: stand-alone stamp with full round caps (dots, particles, halos,
 // or the first segment of a stroke). cap = 0: continues an existing stroke,
 // so the shader subtracts the cap the previous segment already painted at A.
-function emitCapsule(ax, ay, bx, by, halfWidth, glowRadius, r, g, b, a, cap){
+function emitCapsule(ax, ay, bx, by, halfWidth, glowRadius, r, g, b, a, cap, out = capsuleVerts){
   // slack covers antialiasing plus the ring mode's wall, which extends
   // beyond the nominal radius
   const pad = halfWidth + glowRadius + max(6, halfWidth * 0.2);
@@ -819,7 +843,7 @@ function emitCapsule(ax, ay, bx, by, halfWidth, glowRadius, r, g, b, a, cap){
   const idx = [0, 1, 2, 1, 3, 2];
   for (let i = 0; i < 6; i++){
     const k = idx[i] * 2;
-    capsuleVerts.push(c[k], c[k + 1], ax, ay, bx, by, halfWidth, glowRadius, cap, r, g, b, a);
+    out.push(c[k], c[k + 1], ax, ay, bx, by, halfWidth, glowRadius, cap, r, g, b, a);
   }
 }
 
@@ -868,27 +892,39 @@ function flushBatches(){
     flatVerts = [];
   }
   if (capsuleVerts.length){
-    gl.useProgram(capsuleProg.prog);
-    gl.uniform2f(capsuleProg.uniforms.uRes, bufferSize, bufferSize);
-    gl.bindBuffer(gl.ARRAY_BUFFER, capsuleVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(capsuleVerts), gl.DYNAMIC_DRAW);
-    const stride = 13 * 4;
-    gl.enableVertexAttribArray(capsuleProg.attribs.aPos);
-    gl.vertexAttribPointer(capsuleProg.attribs.aPos, 2, gl.FLOAT, false, stride, 0);
-    gl.enableVertexAttribArray(capsuleProg.attribs.aSeg);
-    gl.vertexAttribPointer(capsuleProg.attribs.aSeg, 4, gl.FLOAT, false, stride, 8);
-    gl.enableVertexAttribArray(capsuleProg.attribs.aParam);
-    gl.vertexAttribPointer(capsuleProg.attribs.aParam, 3, gl.FLOAT, false, stride, 24);
-    gl.enableVertexAttribArray(capsuleProg.attribs.aColor);
-    gl.vertexAttribPointer(capsuleProg.attribs.aColor, 4, gl.FLOAT, false, stride, 36);
-    gl.drawArrays(gl.TRIANGLES, 0, capsuleVerts.length / 13);
-    gl.disableVertexAttribArray(capsuleProg.attribs.aPos);
-    gl.disableVertexAttribArray(capsuleProg.attribs.aSeg);
-    gl.disableVertexAttribArray(capsuleProg.attribs.aParam);
-    gl.disableVertexAttribArray(capsuleProg.attribs.aColor);
+    drawCapsuleBatch(capsuleVerts);
     capsuleVerts = [];
   }
+  if (silkVerts.length){
+    // additive: src alpha in, everything already there kept at full — ghost
+    // passes stack toward white exactly like canvas2d's 'lighter'
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    drawCapsuleBatch(silkVerts);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    silkVerts = [];
+  }
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+function drawCapsuleBatch(verts){
+  gl.useProgram(capsuleProg.prog);
+  gl.uniform2f(capsuleProg.uniforms.uRes, bufferSize, bufferSize);
+  gl.bindBuffer(gl.ARRAY_BUFFER, capsuleVBO);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.DYNAMIC_DRAW);
+  const stride = 13 * 4;
+  gl.enableVertexAttribArray(capsuleProg.attribs.aPos);
+  gl.vertexAttribPointer(capsuleProg.attribs.aPos, 2, gl.FLOAT, false, stride, 0);
+  gl.enableVertexAttribArray(capsuleProg.attribs.aSeg);
+  gl.vertexAttribPointer(capsuleProg.attribs.aSeg, 4, gl.FLOAT, false, stride, 8);
+  gl.enableVertexAttribArray(capsuleProg.attribs.aParam);
+  gl.vertexAttribPointer(capsuleProg.attribs.aParam, 3, gl.FLOAT, false, stride, 24);
+  gl.enableVertexAttribArray(capsuleProg.attribs.aColor);
+  gl.vertexAttribPointer(capsuleProg.attribs.aColor, 4, gl.FLOAT, false, stride, 36);
+  gl.drawArrays(gl.TRIANGLES, 0, verts.length / 13);
+  gl.disableVertexAttribArray(capsuleProg.attribs.aPos);
+  gl.disableVertexAttribArray(capsuleProg.attribs.aSeg);
+  gl.disableVertexAttribArray(capsuleProg.attribs.aParam);
+  gl.disableVertexAttribArray(capsuleProg.attribs.aColor);
 }
 
 // like sketch.js's flat-batch/capsule split: the fade rect must land UNDER
@@ -1041,6 +1077,9 @@ function frame(nowMs){
     lastX = mouseX; lastY = mouseY;
   }
 
+  // after input so points laid this frame are already part of the rope
+  silkFrame();
+
   flushBatches();
   present();
 }
@@ -1183,6 +1222,14 @@ function drawMandalaStroke(x1, y1, x2, y2){
   const dx = p2.x - cx, dy = p2.y - cy;
   const pdx = p1.x - cx, pdy = p1.y - cy;
   const speed = hypot(x2 - x1, y2 - y1);
+
+  // silk lays no ink here — the pointer only feeds points into a rope, and
+  // silkFrame() draws the living rope every frame (even after input stops)
+  if (strokeStyleMode === 'silk'){
+    curStrokeEnds.push([x2, y2, 1, p2.x, p2.y]);
+    silkAddPoint(x1, y1, x2, y2, p1, p2);
+    return;
+  }
 
   // dashed style: ink pulses on and off on a frame clock — slow movement
   // gives fine stitching, fast movement long dashes. Gap frames still
@@ -1355,6 +1402,176 @@ function drawArm(pdx, pdy, dx, dy, sw, col, cx, cy, cosA, sinA, mirrored, contin
     const half = max(sw * 1.3, 8);
     emitCapsule(bx - ddx * half, by - ddy * half, bx + ddx * half, by + ddy * half,
       max(sw * 0.45, 1.5), glow, r, g, b, a, 1);
+  }
+}
+
+// ---------- silk wisps engine (mirrors sketch.js) ----------
+// feeds a pointer segment (buffer-space endpoints p1/p2) into the rope that
+// has been following this input source, matching on raw input coords the
+// same way prevStrokeEnds does — mouse and each idle pen each get their own
+// rope, so double idle patterns don't zigzag into one another
+function silkAddPoint(x1, y1, x2, y2, p1, p2){
+  let rope = silkRopes.find((r) => r.lastInX === x1 && r.lastInY === y1);
+  if (!rope){
+    if (silkRopes.length >= SILK_MAX_ROPES) silkRopes.shift();
+    rope = { pts: [], lastInX: x1, lastInY: y1 };
+    silkRopes.push(rope);
+  }
+  rope.pts.push({
+    x: p2.x, y: p2.y, px: p2.x, py: p2.y,
+    ivx: p2.x - p1.x, ivy: p2.y - p1.y,
+    life: SILK_POINT_LIFE
+  });
+  if (rope.pts.length > SILK_MAX_ROPE_POINTS) rope.pts.shift();
+  rope.lastInX = x2;
+  rope.lastInY = y2;
+}
+
+// one physics step, straight port of weavesilk's Silk.step: a noise-field
+// force whose ANGLE comes from Perlin noise (rotated around the centre so
+// wisps flow radially), a decaying launch push, then a constraint pass
+// pulling neighbours together so the rope folds into sheets
+function silkStepRope(rope){
+  const cx = bufferSize / 2, cy = bufferSize / 2;
+  const pts = rope.pts;
+  while (pts.length && pts[0].life <= 0) pts.shift();
+  for (let i = 0; i < pts.length; i++){
+    const p = pts[i];
+    const symAngle = Math.atan2(p.y - cy, p.x - cx);
+    // this noise() is 2D — drifting the sample point over time stands in
+    // for sketch.js's true 3D time axis, close enough for a force field
+    const nv = noise(p.x * SILK_NOISE_SPACE + silkTime * SILK_NOISE_TIME,
+                     p.y * SILK_NOISE_SPACE + silkTime * SILK_NOISE_TIME * 0.7);
+    const na = SILK_NOISE_ANGLE * nv + symAngle;
+    let accx = cos(na) + SILK_IVEL_FORCE * p.ivx;
+    let accy = sin(na) + SILK_IVEL_FORCE * p.ivy;
+    p.ivx *= SILK_IVEL_DECAY;
+    p.ivy *= SILK_IVEL_DECAY;
+    // px/py catch up to the post-move position, so the velocity term below
+    // only ever carries last step's constraint correction — that soft
+    // elastic memory is what weavesilk's cloth feel comes from
+    p.x += (p.x - p.px) * SILK_FRICTION + accx;
+    p.y += (p.y - p.py) * SILK_FRICTION + accy;
+    p.px = p.x;
+    p.py = p.y;
+    p.life--;
+    if (i){
+      const p2 = pts[i - 1];
+      const xoff = p2.x - p.x, yoff = p2.y - p.y;
+      const d = Math.sqrt(xoff * xoff + yoff * yoff);
+      if (d > 0.01){
+        const fx = SILK_RIGIDITY * xoff, fy = SILK_RIGIDITY * yoff;
+        p.x += fx; p2.x -= fx;
+        p.y += fy; p2.y -= fy;
+      }
+    }
+  }
+}
+
+// stroke colour for a rope through the normal colour engine ({h,s,b} — the
+// ghost alpha is applied separately when the capsules are emitted)
+function silkRopeColour(rope){
+  if (colourMode === 'rainbow'){
+    const t = (hueShift % 360) / 360;
+    const c = strokeColourFromT(t);
+    return { h: c.h, s: c.s, b: c.b };
+  }
+  if (colourMode === 'gradient'){
+    const cx = bufferSize / 2, cy = bufferSize / 2;
+    const newest = rope.pts[rope.pts.length - 1];
+    const t = constrain(hypot(newest.x - cx, newest.y - cy) / hypot(cx, cy), 0, 1);
+    const c = strokeColourFromT(t);
+    return { h: c.h, s: c.s, b: c.b };
+  }
+  return hexToHSB(solidColourHex);
+}
+
+// one symmetry arm of a rope: transform every point like drawArm does and
+// emit the chain into the additive silk batch. cap=0 on continuations so
+// overlapping joint caps don't double-brighten under additive blending.
+function silkEmitArm(pts, cosA, sinA, mirrored, sc, offX, offY, halfW, r, g, b, a){
+  const cx = bufferSize / 2, cy = bufferSize / 2;
+  const hw = halfW * sc;
+  let prevX = 0, prevY = 0;
+  for (let i = 0; i < pts.length; i++){
+    let x = pts[i].x, y = mirrored ? -pts[i].y : pts[i].y;
+    const wx = cx + (x * cosA - y * sinA) * sc + offX;
+    const wy = cy + (x * sinA + y * cosA) * sc + offY;
+    if (i) emitCapsule(prevX, prevY, wx, wy, hw, 0, r, g, b, a, i === 1 ? 1 : 0, silkVerts);
+    prevX = wx; prevY = wy;
+  }
+}
+
+// draw every rope through the same symmetry replication drawMandalaStroke
+// uses, but into the additive batch at ghost alpha — once per physics step
+function silkEmitRopes(){
+  const cx = bufferSize / 2, cy = bufferSize / 2;
+  const halfW = max(brushSize * 0.15, 0.7) / 2;
+
+  for (const rope of silkRopes){
+    if (rope.pts.length < 2) continue;
+
+    let pts = rope.pts.map((p) => ({ x: p.x - cx, y: p.y - cy }));
+    if (symmetryMode === 'kaleido'){
+      const wedge = TWO_PI / max(symmetry, 1);
+      pts = pts.map((p) => {
+        const rr = hypot(p.x, p.y);
+        let ang = ((Math.atan2(p.y, p.x) % (2 * wedge)) + 2 * wedge) % (2 * wedge);
+        if (ang > wedge) ang = 2 * wedge - ang;
+        return { x: rr * cos(ang), y: rr * sin(ang) };
+      });
+    }
+
+    const col = silkRopeColour(rope);
+    const [r, g, b] = hsbToRgb(col.h, col.s, col.b);
+    // strokeAlpha 92 ≈ weavesilk's 0.09 per pass; the newest point's life
+    // fraction fades the whole rope out once input stops feeding it
+    const a = (strokeAlpha / 1000) * (rope.pts[rope.pts.length - 1].life / SILK_POINT_LIFE);
+
+    if (symmetryMode === 'grid'){
+      const cells = constrain(round(Math.sqrt(symmetry)), 2, 6);
+      const tile = bufferSize / cells;
+      const s = 1 / cells;
+      for (let gy = 0; gy < cells; gy++){
+        for (let gx = 0; gx < cells; gx++){
+          const offX = (gx + 0.5) * tile - cx;
+          const offY = (gy + 0.5) * tile - cy;
+          const fx = (gx + gy) % 2 === 1 ? -1 : 1;
+          const flipped = fx === -1 ? pts.map((p) => ({ x: -p.x, y: p.y })) : pts;
+          silkEmitArm(flipped, 1, 0, false, s, offX, offY, halfW, r, g, b, a);
+          if (mirror) silkEmitArm(flipped, 1, 0, true, s, offX, offY, halfW, r, g, b, a);
+        }
+      }
+    } else {
+      const angleStep = TWO_PI / symmetry;
+      const bothSides = mirror || symmetryMode === 'kaleido';
+      let ang = 0;
+      for (let i = 0; i < symmetry; i++){
+        ang += angleStep;
+        const cosA = cos(ang), sinA = sin(ang);
+        const sc = symmetryMode === 'spiral' ? Math.pow(0.35, i / symmetry) : 1;
+        silkEmitArm(pts, cosA, sinA, false, sc, 0, 0, halfW, r, g, b, a);
+        if (bothSides) silkEmitArm(pts, cosA, sinA, true, sc, 0, 0, halfW, r, g, b, a);
+      }
+    }
+  }
+}
+
+// per-frame silk pass: run the physics and lay a ghost of every rope after
+// each step. Ropes keep flowing (and fading) after input stops; switching
+// away from the silk brush drops them instantly.
+function silkFrame(){
+  if (strokeStyleMode !== 'silk'){
+    if (silkRopes.length) silkRopes = [];
+    return;
+  }
+  silkRopes = silkRopes.filter((r) => r.pts.length);
+  if (!silkRopes.length) return;
+  if (colourMode === 'rainbow') hueShift = (hueShift + rainbowSpeed) % 360;
+  for (let s = 0; s < SILK_STEPS_PER_FRAME; s++){
+    silkTime++;
+    for (const rope of silkRopes) silkStepRope(rope);
+    silkEmitRopes();
   }
 }
 
@@ -1777,7 +1994,7 @@ function randomizeSettings($){
   symmetryMode = random(['radial', 'radial', 'kaleido', 'spiral', 'grid']);
   $('symmetryMode').value = symmetryMode;
 
-  strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed']);
+  strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed', 'silk']);
   $('strokeStyle').value = strokeStyleMode;
 
   pulseBrush = random() > 0.5;
