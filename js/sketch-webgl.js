@@ -1100,19 +1100,52 @@ function drawMandalaStroke(x1, y1, x2, y2){
 
   // continuing an existing stroke? (its start is where a stroke ended last
   // frame — mouse path and each idle pen all match on exact coordinates)
-  const continuing = prevStrokeEnds.some((p) => p[0] === x1 && p[1] === y1);
-  curStrokeEnds.push([x2, y2]);
+  const prev = prevStrokeEnds.find((p) => p[0] === x1 && p[1] === y1);
+  const continuing = !!prev;
+
+  // stamped styles drop their shape at even distances along the path (the
+  // leftover distance carries across frames in curStrokeEnds), so each
+  // stamp reads as its own star/ring/petal instead of smearing into a
+  // continuous glow line
+  const spacing = stampSpacing(sw);
+  const targets = []; // stroke-relative endpoints to draw this frame
+  if (spacing > 0){
+    const segLen = hypot(dx - pdx, dy - pdy);
+    let since = continuing ? prev[2] : spacing; // fresh strokes stamp immediately
+    let pos = spacing - since;
+    if (pos < 0) pos = 0;
+    while (pos <= segLen){
+      const t = segLen > 1e-6 ? pos / segLen : 0;
+      targets.push([pdx + (dx - pdx) * t, pdy + (dy - pdy) * t]);
+      pos += spacing;
+    }
+    curStrokeEnds.push([x2, y2, segLen - (pos - spacing)]);
+  } else {
+    targets.push([dx, dy]);
+    curStrokeEnds.push([x2, y2, 0]);
+  }
 
   const angleStep = TWO_PI / symmetry;
   let ang = 0;
   for (let i = 0; i < symmetry; i++){
     ang += angleStep;
     const cosA = cos(ang), sinA = sin(ang);
-    drawArm(pdx, pdy, dx, dy, sw, strokeColour, cx, cy, cosA, sinA, false, continuing);
-    if (mirror){
-      drawArm(pdx, pdy, dx, dy, sw, strokeColour, cx, cy, cosA, sinA, true, continuing);
+    for (const [tx, ty] of targets){
+      drawArm(pdx, pdy, tx, ty, sw, strokeColour, cx, cy, cosA, sinA, false, continuing);
+      if (mirror){
+        drawArm(pdx, pdy, tx, ty, sw, strokeColour, cx, cy, cosA, sinA, true, continuing);
+      }
     }
   }
+}
+
+// stamp pitch per style, scaled to the rendered shape size (0 = continuous
+// styles that draw every frame)
+function stampSpacing(sw){
+  if (strokeStyleMode === 'sparkle') return max(sw, 5) * 3.2;
+  if (strokeStyleMode === 'rings') return max(sw * 1.4, 8) * 2.6;
+  if (strokeStyleMode === 'petals') return max(sw * 1.3, 8) * 2.2;
+  return 0;
 }
 
 // one symmetry arm: rotate/mirror local coords into art-buffer world space
@@ -1146,10 +1179,12 @@ function drawArm(pdx, pdy, dx, dy, sw, col, cx, cy, cosA, sinA, mirrored, contin
 
   } else if (strokeStyleMode === 'sparkle'){
     // soft halo standing in for the star's shadowBlur, then the star itself
+    // (minimum size so the 4-point shape stays legible at small brushes)
+    const s = max(sw, 5);
     if (glow > 0){
-      emitCapsule(bx, by, bx, by, 0, glow + sw * 0.5, r, g, b, a, 1);
+      emitCapsule(bx, by, bx, by, 0, glow + s * 0.5, r, g, b, a, 1);
     }
-    emitStar(bx, by, sw * 0.4, sw * 1.3, 4, r, g, b, a);
+    emitStar(bx, by, s * 0.5, s * 1.6, 4, r, g, b, a);
 
   } else if (strokeStyleMode === 'rails'){
     // two thin parallel lines riding either side of the stroke path (full
@@ -1158,20 +1193,23 @@ function drawArm(pdx, pdy, dx, dy, sw, col, cx, cy, cosA, sinA, mirrored, contin
     let ddx = bx - ax, ddy = by - ay;
     const dl = hypot(ddx, ddy);
     if (dl < 1e-6){ ddx = 1; ddy = 0; } else { ddx /= dl; ddy /= dl; }
-    const ox = -ddy * sw * 0.9, oy = ddx * sw * 0.9;
+    // minimum gap so the two rails read as two even at small brush sizes,
+    // where the glow halos would otherwise fuse them into one line
+    const off = max(sw * 0.9, 6);
+    const ox = -ddy * off, oy = ddx * off;
     const railHw = max(sw * 0.35, 1) / 2;
     emitCapsule(ax + ox, ay + oy, bx + ox, by + oy, railHw, glow, r, g, b, a, 1);
     emitCapsule(ax - ox, ay - oy, bx - ox, by - oy, railHw, glow, r, g, b, a, 1);
 
   } else if (strokeStyleMode === 'rings'){
-    emitCapsule(bx, by, bx, by, sw * 1.2, glow, r, g, b, a, 2);
+    emitCapsule(bx, by, bx, by, max(sw * 1.4, 8), glow, r, g, b, a, 2);
 
   } else if (strokeStyleMode === 'petals'){
     // an elongated stamp oriented along the motion direction
     let ddx = bx - ax, ddy = by - ay;
     const dl = hypot(ddx, ddy);
     if (dl < 1e-6){ ddx = 1; ddy = 0; } else { ddx /= dl; ddy /= dl; }
-    const half = sw * 1.1;
+    const half = max(sw * 1.3, 8);
     emitCapsule(bx - ddx * half, by - ddy * half, bx + ddx * half, by + ddy * half,
       max(sw * 0.45, 1.5), glow, r, g, b, a, 1);
   }

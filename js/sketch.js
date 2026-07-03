@@ -263,6 +263,12 @@ let hueShift = 0;
 let lastX = null, lastY = null;
 let particles = [];
 
+// screen-space endpoints of last frame's strokes (with each stroke's
+// carried stamp distance) — lets stamped styles space their shapes evenly
+// along a continuing path
+let prevStrokeEnds = [];
+let curStrokeEnds = [];
+
 // while a breathing session is active it temporarily drives rotateSpeed;
 // the panel-driven value is preserved here and restored on exit
 let userRotateSpeed = rotateSpeed;
@@ -358,6 +364,9 @@ function draw(){
     artLayer.fill(hue(bgColourP5), saturation(bgColourP5), brightness(bgColourP5), fadeAlpha);
     artLayer.rect(0, 0, bufferSize, bufferSize);
   }
+
+  prevStrokeEnds = curStrokeEnds;
+  curStrokeEnds = [];
 
   updateAndDrawParticles();
 
@@ -546,6 +555,15 @@ function paletteHue(t){
   return (range[0] + t * (range[1] - range[0])) % 360;
 }
 
+// stamp pitch per style, scaled to the rendered shape size (0 = continuous
+// styles that draw every frame)
+function stampSpacing(sw){
+  if (strokeStyleMode === 'sparkle') return max(sw, 5) * 3.2;
+  if (strokeStyleMode === 'rings') return max(sw * 1.4, 8) * 2.6;
+  if (strokeStyleMode === 'petals') return max(sw * 1.3, 8) * 2.2;
+  return 0;
+}
+
 function drawStar(x, y, radius1, radius2, npoints){
   const angle = TWO_PI / npoints;
   const halfAngle = angle / 2.0;
@@ -593,17 +611,44 @@ function drawMandalaStroke(x1, y1, x2, y2){
   artLayer.drawingContext.shadowBlur = glowIntensity;
   artLayer.drawingContext.shadowColor = strokeColour.toString();
 
+  // stamped styles drop their shape at even distances along the path (the
+  // leftover distance carries across frames), so each stamp reads as its
+  // own star/ring/petal instead of smearing into a continuous glow line
+  const prev = prevStrokeEnds.find((p) => p[0] === x1 && p[1] === y1);
+  const continuing = !!prev;
+  const spacing = stampSpacing(sw);
+  const targets = []; // centre-relative endpoints to draw this frame
+  if (spacing > 0){
+    const segLen = Math.hypot(dx - pdx, dy - pdy);
+    let since = continuing ? prev[2] : spacing; // fresh strokes stamp immediately
+    let pos = spacing - since;
+    if (pos < 0) pos = 0;
+    while (pos <= segLen){
+      const t = segLen > 1e-6 ? pos / segLen : 0;
+      targets.push([pdx + (dx - pdx) * t, pdy + (dy - pdy) * t]);
+      pos += spacing;
+    }
+    curStrokeEnds.push([x2, y2, segLen - (pos - spacing)]);
+  } else {
+    targets.push([dx, dy]);
+    curStrokeEnds.push([x2, y2, 0]);
+  }
+
   artLayer.push();
   artLayer.translate(cx, cy);
   const angleStep = TWO_PI / symmetry;
 
   for (let i = 0; i < symmetry; i++){
     artLayer.rotate(angleStep);
-    drawArm(pdx, pdy, dx, dy, sw, strokeColour);
+    for (const [tx, ty] of targets){
+      drawArm(pdx, pdy, tx, ty, sw, strokeColour);
+    }
     if (mirror){
       artLayer.push();
       artLayer.scale(1, -1);
-      drawArm(pdx, pdy, dx, dy, sw, strokeColour);
+      for (const [tx, ty] of targets){
+        drawArm(pdx, pdy, tx, ty, sw, strokeColour);
+      }
       artLayer.pop();
     }
   }
@@ -641,16 +686,20 @@ function drawArm(pdx, pdy, dx, dy, sw, strokeColour){
     artLayer.ellipse(dx, dy, sw, sw);
 
   } else if (strokeStyleMode === 'sparkle'){
+    // minimum size so the 4-point shape stays legible at small brushes
+    const s = max(sw, 5);
     artLayer.noStroke();
     artLayer.fill(strokeColour);
-    drawStar(dx, dy, sw * 0.4, sw * 1.3, 4);
+    drawStar(dx, dy, s * 0.5, s * 1.6, 4);
 
   } else if (strokeStyleMode === 'rails'){
-    // two thin parallel lines riding either side of the stroke path
+    // two thin parallel lines riding either side of the stroke path, with a
+    // minimum gap so they read as two even at small brush sizes
     let ddx = dx - pdx, ddy = dy - pdy;
     const dl = Math.hypot(ddx, ddy);
     if (dl < 1e-6){ ddx = 1; ddy = 0; } else { ddx /= dl; ddy /= dl; }
-    const ox = -ddy * sw * 0.9, oy = ddx * sw * 0.9;
+    const off = max(sw * 0.9, 6);
+    const ox = -ddy * off, oy = ddx * off;
     artLayer.noFill();
     artLayer.stroke(strokeColour);
     artLayer.strokeWeight(max(sw * 0.35, 1));
@@ -659,19 +708,22 @@ function drawArm(pdx, pdy, dx, dy, sw, strokeColour){
     artLayer.line(pdx - ox, pdy - oy, dx - ox, dy - oy);
 
   } else if (strokeStyleMode === 'rings'){
+    const rr = max(sw * 1.4, 8);
     artLayer.noFill();
     artLayer.stroke(strokeColour);
-    artLayer.strokeWeight(max(1.5, sw * 0.16));
-    artLayer.circle(dx, dy, sw * 2.4);
+    artLayer.strokeWeight(max(1.5, rr * 0.16));
+    artLayer.circle(dx, dy, rr * 2);
 
   } else if (strokeStyleMode === 'petals'){
     // an elongated stamp oriented along the motion direction
+    const ph = max(sw * 1.3, 8);
+    const pw = max(sw * 0.45, 1.5);
     artLayer.noStroke();
     artLayer.fill(strokeColour);
     artLayer.push();
     artLayer.translate(dx, dy);
     artLayer.rotate(Math.atan2(dy - pdy, dx - pdx));
-    artLayer.ellipse(0, 0, sw * 2.9, sw * 1.1);
+    artLayer.ellipse(0, 0, ph * 2 + pw, pw * 2);
     artLayer.pop();
   }
 }
