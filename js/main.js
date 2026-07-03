@@ -37,17 +37,22 @@
   };
   if (typeof applyAmbientState === 'function') applyAmbientState(ambient);
 
+  // every control registers a refresher that re-reads `ambient`, so the
+  // whole tab can re-sync after a reset-to-defaults
+  const ambientRefreshers = [];
+  const syncAmbientUI = () => ambientRefreshers.forEach((f) => f());
+
   [['ambSymmetry', 'symmetry'], ['ambBrush', 'brush'],
    ['ambPulse', 'pulseBrush'], ['ambColours', 'colours'], ['ambGlow', 'glow'],
    ['ambAlpha', 'strokeAlpha'], ['ambRotation', 'rotation'], ['ambReact', 'reactToSpeed'],
    ['ambSparkle', 'sparkleDust'], ['ambTrails', 'trails']].forEach(([id, key]) => {
     const el = $id(id);
-    el.checked = ambient.randomize[key];
+    ambientRefreshers.push(() => { el.checked = ambient.randomize[key]; });
     el.addEventListener('change', () => { ambient.randomize[key] = el.checked; pushAmbient(); });
   });
 
   document.querySelectorAll('#tab-ambient [data-style]').forEach((cb) => {
-    cb.checked = ambient.styles.includes(cb.dataset.style);
+    ambientRefreshers.push(() => { cb.checked = ambient.styles.includes(cb.dataset.style); });
     cb.addEventListener('change', () => {
       ambient.styles = [...document.querySelectorAll('#tab-ambient [data-style]:checked')]
         .map((c) => c.dataset.style);
@@ -63,7 +68,7 @@
       lo.value = ambient[minKey]; hi.value = ambient[maxKey];
       loVal.textContent = ambient[minKey]; hiVal.textContent = ambient[maxKey];
     };
-    refresh();
+    ambientRefreshers.push(refresh);
     lo.addEventListener('input', () => {
       ambient[minKey] = parseInt(lo.value, 10);
       if (ambient[minKey] > ambient[maxKey]) ambient[maxKey] = ambient[minKey];
@@ -80,12 +85,27 @@
   bindRangePair('ambGlowMin', 'ambGlowMax', 'glowMin', 'glowMax');
 
   document.querySelectorAll('#tab-ambient [data-pattern]').forEach((cb) => {
-    cb.checked = ambient.patterns.includes(cb.dataset.pattern);
+    ambientRefreshers.push(() => { cb.checked = ambient.patterns.includes(cb.dataset.pattern); });
     cb.addEventListener('change', () => {
       ambient.patterns = [...document.querySelectorAll('#tab-ambient [data-pattern]:checked')]
         .map((c) => c.dataset.pattern);
       pushAmbient();
     });
+  });
+  syncAmbientUI();
+
+  // ---- reset everything (art + ambient) back to factory defaults ----
+  document.getElementById('resetDefaultsBtn').addEventListener('click', () => {
+    const defaults = MandalaStorage.DEFAULT_STATE;
+    const dm = JSON.parse(JSON.stringify(defaults.mandala));
+    if (typeof applyMandalaState === 'function') applyMandalaState(dm);
+    MandalaStorage.patch('mandala', dm);
+
+    const da = JSON.parse(JSON.stringify(defaults.ambient));
+    Object.keys(ambient).forEach((k) => { delete ambient[k]; });
+    Object.assign(ambient, da);
+    syncAmbientUI();
+    pushAmbient();
   });
 
   document.getElementById('panel').classList.toggle('collapsed', state.panelCollapsed);

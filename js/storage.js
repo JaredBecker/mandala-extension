@@ -7,7 +7,8 @@
     mandala: {
       symmetry: 12, mirror: true, brushSize: 3, reactToSpeed: true,
       colourMode: 'rainbow', solidColourHex: '#ff3e94', trailMode: 'fade',
-      fadeSpeed: 8, bgColourHex: '#0a0a0a', palette: 'full', glowIntensity: 10,
+      // low default glow: crisp lines out of the box, glow is opt-in
+      fadeSpeed: 8, bgColourHex: '#0a0a0a', palette: 'full', glowIntensity: 4,
       pulseBrush: false, strokeStyleMode: 'line', autoRotate: true,
       rotateSpeed: 0.15, sparkleDust: false, idleDraw: true,
       strokeAlpha: 92,        // stroke opacity, p5's 0-100 alpha scale
@@ -92,5 +93,6 @@
     return state;
   }
 
+  // DEFAULT_STATE doubles as the factory config for "Reset to defaults"
   window.MandalaStorage = { DEFAULT_STATE, load, save, patch, deepMerge };
 })();

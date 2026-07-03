@@ -32,7 +32,7 @@ let bgColourHex = '#0a0a0a';
 let bgColour; // {h,s,b} — HSB like the p5 version's bgColourP5
 
 let palette = 'full';
-let glowIntensity = 10;
+let glowIntensity = 4;
 let pulseBrush = false;
 let strokeStyleMode = 'line'; // 'line' | 'ribbon' | 'dots' | 'sparkle'
 let autoRotate = true;

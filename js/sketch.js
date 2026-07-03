@@ -74,7 +74,7 @@ let bufferSize;
 let rotationAngle = 0;
 
 let palette = 'full';
-let glowIntensity = 10;
+let glowIntensity = 4;
 let pulseBrush = false;
 let strokeStyleMode = 'line'; // 'line' | 'ribbon' | 'dots' | 'sparkle'
 let autoRotate = true;
