@@ -133,11 +133,11 @@
   <div class="control-group">
     <label>Stroke style</label>
     <select id="strokeStyle">
-      <option value="line" selected>Flowing line</option>
+      <option value="line">Flowing line</option>
       <option value="ribbon">Glowing ribbon</option>
       <option value="dots">Stippled dots</option>
       <option value="sparkle">Sparkle burst</option>
-      <option value="rails">Twin rails</option>
+      <option value="rails" selected>Twin rails</option>
       <option value="rings">Echo rings</option>
       <option value="petals">Petal trail</option>
     </select>
@@ -147,12 +147,12 @@
   <p class="section-label">Motion</p>
 
   <div class="control-group">
-    <label>Brush size <span id="brushVal">3</span></label>
-    <input type="range" id="brush" min="1" max="20" value="3">
+    <label>Brush size <span id="brushVal">10</span></label>
+    <input type="range" id="brush" min="1" max="20" value="10">
   </div>
 
   <div class="control-group inline">
-    <label><input type="checkbox" id="reactSpeed" checked> React to cursor speed</label>
+    <label><input type="checkbox" id="reactSpeed"> React to cursor speed</label>
   </div>
 
   <div class="control-group inline">
@@ -164,10 +164,10 @@
   </div>
 
   <div class="control-group inline">
-    <label><input type="checkbox" id="autoRotate" checked> Ambient auto-rotate</label>
+    <label><input type="checkbox" id="autoRotate"> Ambient auto-rotate</label>
   </div>
 
-  <div class="control-group" id="rotateGroup" style="display:block;">
+  <div class="control-group" id="rotateGroup" style="display:none;">
     <label>Rotate speed <span id="rotateVal">0.15</span></label>
     <input type="range" id="rotateSpeed" min="0.05" max="2" step="0.05" value="0.15">
   </div>
@@ -206,8 +206,8 @@
   </div>
 
   <div class="control-group">
-    <label>Glow intensity <span id="glowVal">4</span></label>
-    <input type="range" id="glow" min="0" max="30" value="4">
+    <label>Glow intensity <span id="glowVal">0</span></label>
+    <input type="range" id="glow" min="0" max="30" value="0">
   </div>
 
   <div class="control-group">

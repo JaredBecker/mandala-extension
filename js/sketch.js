@@ -1,8 +1,8 @@
 // ---------- mandala p5 sketch (global mode) + settings panel wiring ----------
 let symmetry = 12;
 let mirror = true;
-let brushSize = 3;
-let reactToSpeed = true;
+let brushSize = 10;
+let reactToSpeed = false;
 let colourMode = 'rainbow';
 let solidColourHex = '#ff3e94';
 let trailMode = 'fade';
@@ -74,10 +74,10 @@ let bufferSize;
 let rotationAngle = 0;
 
 let palette = 'full';
-let glowIntensity = 4;
+let glowIntensity = 0;
 let pulseBrush = false;
-let strokeStyleMode = 'line'; // 'line' | 'ribbon' | 'dots' | 'sparkle'
-let autoRotate = true;
+let strokeStyleMode = 'rails';
+let autoRotate = false;
 let rotateSpeed = 0.15;
 let sparkleDust = false;
 let idleDraw = true;

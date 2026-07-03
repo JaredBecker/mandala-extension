@@ -5,11 +5,12 @@
     locations: [],
     activeLocationId: null,
     mandala: {
-      symmetry: 12, mirror: true, brushSize: 3, reactToSpeed: true,
+      symmetry: 12, mirror: true, brushSize: 10, reactToSpeed: false,
       colourMode: 'rainbow', solidColourHex: '#ff3e94', trailMode: 'fade',
-      // low default glow: crisp lines out of the box, glow is opt-in
-      fadeSpeed: 8, bgColourHex: '#0a0a0a', palette: 'full', glowIntensity: 4,
-      pulseBrush: false, strokeStyleMode: 'line', autoRotate: true,
+      // zero default glow and every motion extra off: the factory look is
+      // pure crisp twin-rail linework — everything else is opt-in
+      fadeSpeed: 8, bgColourHex: '#0a0a0a', palette: 'full', glowIntensity: 0,
+      pulseBrush: false, strokeStyleMode: 'rails', autoRotate: false,
       rotateSpeed: 0.15, sparkleDust: false, idleDraw: true,
       strokeAlpha: 92,        // stroke opacity, p5's 0-100 alpha scale
       rainbowSpeed: 0.7,      // hue-cycle rate in rainbow colour mode
