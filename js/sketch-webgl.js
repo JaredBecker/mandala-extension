@@ -355,6 +355,11 @@ function wireInputTracking(){
       return;
     }
     mouseX = e.clientX; mouseY = e.clientY;
+    // moving around the menu isn't drawing intent — ambient mode keeps
+    // painting behind the panel. Actually touching a control still wakes
+    // it (the capture-phase listeners in wireUpPanel), so changes made
+    // there are never clobbered by the shuffle's restore-on-wake.
+    if (mouseOverUI) return;
     lastRealInput = Date.now();
     hasInteracted = true;
     if (idleActive){
@@ -890,10 +895,9 @@ function frame(nowMs){
 
   // !hasInteracted: a fresh tab starts drawing immediately — nobody should
   // stare at an empty canvas waiting out the idle threshold on open.
-  // !mouseOverUI: never start ambient mode while the cursor is parked on
-  // the panel/HUD — the user is present and (likely) mid-adjustment, and
-  // the shuffle would overwrite what they're doing
-  if (idleDraw && !idleActive && !mouseOverUI && (!hasInteracted || Date.now() - lastRealInput > IDLE_THRESHOLD_MS)){
+  // The cursor being over the panel doesn't block this: browsing the menu
+  // still counts as idle, so ambient art keeps playing behind it.
+  if (idleDraw && !idleActive && (!hasInteracted || Date.now() - lastRealInput > IDLE_THRESHOLD_MS)){
     idleActive = true;
     enterIdleConfigShuffle(); // also initializes fresh idlePens
   }
