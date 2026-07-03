@@ -24,7 +24,14 @@
     const input = document.getElementById('wizardLocationInput');
     const results = document.getElementById('wizardLocationResults');
     results.innerHTML = '<li>Searching…</li>';
-    const found = await MandalaWeather.geocode(input.value.trim());
+    let found;
+    try {
+      found = await MandalaWeather.geocode(input.value.trim());
+    } catch (e){
+      // a failed fetch must never strand the UI on "Searching…"
+      results.innerHTML = '<li>Couldn&rsquo;t reach the location service. Check your connection and try again.</li>';
+      return;
+    }
     results.innerHTML = '';
     if (found.length === 0){
       results.innerHTML = '<li>No matches. Try a different spelling.</li>';

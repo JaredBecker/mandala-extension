@@ -77,14 +77,30 @@
 }
 .control-group.inline input[type="checkbox"]{ accent-color: var(--gold); width:15px; height:15px; cursor:pointer; }
 
+/* the input itself is a full-height transparent hit area (a 3px-tall input
+   made Firefox's clickable track ~3px, so click-to-jump barely worked);
+   the visible 3px track is drawn by the track pseudo-elements, which need
+   separate -webkit and -moz rules — they can't share a selector */
 input[type="range"]{
-  width:100%; height:3px; -webkit-appearance:none; appearance:none;
+  width:100%; height:18px; -webkit-appearance:none; appearance:none;
+  background:transparent; outline:none; padding:0; margin:0;
+}
+input[type="range"]::-webkit-slider-runnable-track{
+  height:3px; border-radius:2px;
   background: linear-gradient(90deg, var(--gold), var(--magenta));
-  border-radius:2px; outline:none;
 }
 input[type="range"]::-webkit-slider-thumb{
   -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
   background:var(--ink); border:2px solid var(--gold);
+  margin-top:-5.5px; /* center the 14px thumb on the 3px track */
+}
+input[type="range"]::-moz-range-track{
+  height:3px; border-radius:2px;
+  background: linear-gradient(90deg, var(--gold), var(--magenta));
+}
+input[type="range"]::-moz-range-thumb{
+  width:10px; height:10px; border-radius:50%;
+  background:var(--ink); border:2px solid var(--gold); /* border adds 4px → 14px total, matching WebKit */
 }
 
 select{

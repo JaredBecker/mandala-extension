@@ -337,8 +337,11 @@ function draw(){
   updateAndDrawParticles();
 
   // !hasInteracted: a fresh tab starts drawing immediately — nobody should
-  // stare at an empty canvas waiting out the idle threshold on open
-  if (idleDraw && !idleActive && (!hasInteracted || Date.now() - lastRealInput > IDLE_THRESHOLD_MS)){
+  // stare at an empty canvas waiting out the idle threshold on open.
+  // !mouseOverUI: never start ambient mode while the cursor is parked on
+  // the panel/HUD — the user is present and (likely) mid-adjustment, and
+  // the shuffle would overwrite what they're doing
+  if (idleDraw && !idleActive && !mouseOverUI && (!hasInteracted || Date.now() - lastRealInput > IDLE_THRESHOLD_MS)){
     idleActive = true;
     enterIdleConfigShuffle(); // also initializes fresh idlePens
   }
@@ -803,6 +806,25 @@ function wireUpPanel(){
 
   const panel = $('panel');
   const toggle = $('panel-toggle');
+
+  // any interaction with a panel control is real user input — wake ambient
+  // mode BEFORE the control's own handler runs (capture phase), or the
+  // shuffle's restore-on-wake clobbers the change that was just made.
+  // Concrete case: Firefox's colour picker is an OS-level dialog, so the
+  // page sees no mouse events while it's open, ambient mode starts, and
+  // the picked colour used to be reverted the moment the mouse moved.
+  const wakeFromAmbient = () => {
+    lastRealInput = Date.now();
+    hasInteracted = true;
+    if (idleActive){
+      idleActive = false;
+      lastX = null; lastY = null;
+      exitIdleConfigShuffle();
+    }
+  };
+  ['pointerdown', 'input', 'change'].forEach((evt) => {
+    panel.addEventListener(evt, wakeFromAmbient, true);
+  });
   toggle.addEventListener('click', () => {
     const collapsed = panel.classList.toggle('collapsed');
     MandalaStorage.patch('panelCollapsed', collapsed);
