@@ -6,7 +6,7 @@ let reactToSpeed = false;
 let colourMode = 'rainbow';
 let solidColourHex = '#ff3e94';
 let trailMode = 'fade';
-let fadeSpeed = 8;
+let fadeSpeed = 4;
 let bgColourHex = '#0a0a0a';
 let bgColourP5;
 

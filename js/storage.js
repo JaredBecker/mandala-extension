@@ -9,7 +9,7 @@
       colourMode: 'rainbow', solidColourHex: '#ff3e94', trailMode: 'fade',
       // zero default glow and every motion extra off: the factory look is
       // pure crisp twin-rail linework — everything else is opt-in
-      fadeSpeed: 8, bgColourHex: '#0a0a0a', palette: 'full', glowIntensity: 0,
+      fadeSpeed: 4, bgColourHex: '#0a0a0a', palette: 'full', glowIntensity: 0,
       pulseBrush: false, strokeStyleMode: 'rails', autoRotate: false,
       rotateSpeed: 0.15, sparkleDust: false, idleDraw: true,
       strokeAlpha: 92,        // stroke opacity, p5's 0-100 alpha scale
