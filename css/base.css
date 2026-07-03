@@ -40,6 +40,36 @@ input[type="number"]::-webkit-outer-spin-button{ -webkit-appearance:none; margin
 .ui{ transition: opacity 0.35s ease; }
 body.zen .ui{ opacity:0 !important; pointer-events:none !important; }
 
+/* ---- custom tooltips (tooltip.js + data-tip attributes) ----
+   solid --select-bg (not the translucent panel glass) because the arrow is
+   a rotated square overlapping the bubble — any transparency would show a
+   double-alpha seam where they stack */
+#tooltip{
+  position:fixed; z-index:99; left:0; top:0;
+  max-width:230px; padding:8px 11px;
+  background:var(--select-bg);
+  border:1px solid var(--panel-border);
+  border-radius:10px;
+  box-shadow:0 8px 26px rgba(0,0,0,0.5);
+  color:var(--ink); font-family:'Inter',sans-serif;
+  font-size:11.5px; line-height:1.5; letter-spacing:0.01em;
+  pointer-events:none;
+  opacity:0; transform:translateY(2px);
+  transition:opacity 0.15s ease, transform 0.15s ease;
+}
+#tooltip.show{ opacity:1; transform:translateY(0); }
+body.zen #tooltip{ opacity:0; }
+/* the arrow: a rotated square poking out of the side facing the control,
+   showing only the two borders that form its point */
+#tooltip::after{
+  content:''; position:absolute; width:9px; height:9px;
+  background:inherit; transform:rotate(45deg);
+}
+#tooltip.tip-left::after{  right:-5.5px; top:calc(var(--ay, 50%) - 4.5px); border-top:1px solid var(--panel-border); border-right:1px solid var(--panel-border); }
+#tooltip.tip-right::after{ left:-5.5px;  top:calc(var(--ay, 50%) - 4.5px); border-bottom:1px solid var(--panel-border); border-left:1px solid var(--panel-border); }
+#tooltip.tip-top::after{   bottom:-5.5px; left:calc(var(--ax, 50%) - 4.5px); border-bottom:1px solid var(--panel-border); border-right:1px solid var(--panel-border); }
+#tooltip.tip-bottom::after{ top:-5.5px;   left:calc(var(--ax, 50%) - 4.5px); border-top:1px solid var(--panel-border); border-left:1px solid var(--panel-border); }
+
 @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
 
 @media (prefers-reduced-motion: reduce){

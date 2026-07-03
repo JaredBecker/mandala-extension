@@ -22,26 +22,26 @@
 
   <div id="location-widget" class="chip"></div>
 
-  <button id="todo-toggle" class="chip" title="Toggle tasks">&#128203;</button>
+  <button id="todo-toggle" class="chip" data-tip="Show or hide your task list">&#128203;</button>
 
   <div id="todo-widget" class="chip">
     <div class="todo-header-row">
       <h2>Tasks</h2>
       <div class="todo-sound-control">
-        <button id="todoSoundToggle" title="Mute task sounds">&#128266;</button>
-        <input type="range" id="todoSoundVolume" min="0" max="100" value="50" title="Task sound volume">
+        <button id="todoSoundToggle" data-tip="Mute or unmute the chime when you tick off a task">&#128266;</button>
+        <input type="range" id="todoSoundVolume" min="0" max="100" value="50" data-tip="How loud the task chime is">
       </div>
     </div>
     <div id="todoList"></div>
     <form id="todoForm">
-      <input id="todoInput" type="text" placeholder="Add a task" maxlength="140" autocomplete="off">
-      <button type="submit">+</button>
+      <input id="todoInput" type="text" placeholder="Add a task" maxlength="140" autocomplete="off" data-tip="Type a task and press Enter to add it">
+      <button type="submit" data-tip="Add this task to the list">+</button>
     </form>
   </div>
 
 </div>
 
-<div id="panel-toggle" class="ui" title="Toggle controls">&#10022;</div>
+<div id="panel-toggle" class="ui" data-tip="Open and close the control panel">&#10022;</div>
 
 <div id="panel" class="ui collapsed">
   <div class="panel-header">
@@ -53,9 +53,9 @@
   </div>
 
   <div class="panel-tabs">
-    <button class="tab-btn active" data-tab="tools">Tools</button>
-    <button class="tab-btn" data-tab="customize">Customize</button>
-    <button class="tab-btn" data-tab="ambient">Ambient</button>
+    <button class="tab-btn active" data-tab="tools" data-tip="Focus timer, quick links, and sticky note">Tools</button>
+    <button class="tab-btn" data-tab="customize" data-tip="Every dial for how the mandala draws">Customize</button>
+    <button class="tab-btn" data-tab="ambient" data-tip="Rules for what the mandala may do when it draws itself">Ambient</button>
   </div>
 
   <div class="tab-content active" id="tab-tools">
@@ -74,16 +74,16 @@
           </div>
         </div>
         <div class="pomo-side">
-          <button id="pomoStart">Start</button>
-          <button id="pomoSkip">Skip</button>
-          <button id="pomoSettingsBtn" title="Timer lengths">&#9881;</button>
+          <button id="pomoStart" data-tip="Start or pause the focus timer">Start</button>
+          <button id="pomoSkip" data-tip="End the current focus or break early and jump to the next">Skip</button>
+          <button id="pomoSettingsBtn" data-tip="Change how long focus sessions and breaks last">&#9881;</button>
         </div>
       </div>
       <div id="pomoSettings" style="display:none;">
-        <div class="pomo-setting"><label>Focus <span><input id="pomoWorkMin" type="number" min="1" max="120"> min</span></label></div>
-        <div class="pomo-setting"><label>Break <span><input id="pomoShortMin" type="number" min="1" max="60"> min</span></label></div>
-        <div class="pomo-setting"><label>Long break <span><input id="pomoLongMin" type="number" min="1" max="60"> min</span></label></div>
-        <div class="pomo-setting"><label>Long break every <span><input id="pomoCycles" type="number" min="2" max="8"> rounds</span></label></div>
+        <div class="pomo-setting" data-tip="Minutes per focus session"><label>Focus <span><input id="pomoWorkMin" type="number" min="1" max="120"> min</span></label></div>
+        <div class="pomo-setting" data-tip="Minutes per short break"><label>Break <span><input id="pomoShortMin" type="number" min="1" max="60"> min</span></label></div>
+        <div class="pomo-setting" data-tip="Minutes for the long break"><label>Long break <span><input id="pomoLongMin" type="number" min="1" max="60"> min</span></label></div>
+        <div class="pomo-setting" data-tip="How many focus rounds before you earn the long break"><label>Long break every <span><input id="pomoCycles" type="number" min="2" max="8"> rounds</span></label></div>
       </div>
       <p class="pomo-meta"><span class="value" id="focusValue">0m</span> focused today &middot; <span id="pomoDots"></span></p>
     </div>
@@ -94,20 +94,20 @@
 
     <div class="divider"></div>
     <p class="section-label">Sticky note</p>
-    <textarea id="stickyText" placeholder="Jot something down..."></textarea>
+    <textarea id="stickyText" placeholder="Jot something down..." data-tip="A scratch pad that saves itself as you type"></textarea>
 
     <div class="divider"></div>
-    <button id="breatheToggleBtn">&#127744; Breathe</button>
+    <button id="breatheToggleBtn" data-tip="A guided breathing exercise &mdash; follow the ring: in, hold, out">&#127744; Breathe</button>
 
     <div class="divider"></div>
     <p class="section-label">Profile</p>
-    <button id="editProfileBtn">Edit name &amp; location</button>
+    <button id="editProfileBtn" data-tip="Change your name and the places your weather comes from">Edit name &amp; location</button>
 
   </div>
 
   <div class="tab-content" id="tab-customize">
 
-  <button id="howtoBtn" class="howto-btn">&#10067; How it works</button>
+  <button id="howtoBtn" class="howto-btn" data-tip="A quick tour of everything on this panel">&#10067; How it works</button>
   <div id="howtoBox">
     <ul>
       <li>Move your cursor across the canvas &mdash; it draws.</li>
@@ -127,16 +127,16 @@
 
   <p class="section-label">Shape</p>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="How many times each stroke repeats around the center">
     <label>Symmetry <span id="symmetryVal">12</span></label>
     <input type="range" id="symmetry" min="2" max="60" value="12">
   </div>
 
-  <div class="control-group inline">
+  <div class="control-group inline" data-tip="Also reflects every stroke, so the pattern folds like a kaleidoscope instead of just repeating">
     <label><input type="checkbox" id="mirror" checked> Mirror reflection</label>
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="The geometry of the repetition &mdash; spokes from the center, folded kaleidoscope wedges, spiral shells, or a repeating tile">
     <label>Symmetry style</label>
     <select id="symmetryMode">
       <option value="radial" selected>Radial spokes</option>
@@ -146,7 +146,7 @@
     </select>
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="The brush your strokes are drawn with &mdash; smooth lines, ribbons, dots, sparks, rings, petals and more">
     <label>Stroke style</label>
     <select id="strokeStyle">
       <option value="line">Flowing line</option>
@@ -165,28 +165,28 @@
   <div class="divider"></div>
   <p class="section-label">Motion</p>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="Thickness of the stroke">
     <label>Brush size <span id="brushVal">10</span></label>
     <input type="range" id="brush" min="1" max="20" value="10">
   </div>
 
-  <div class="control-group inline">
+  <div class="control-group inline" data-tip="The line gets thinner the faster your cursor moves, like a real pen">
     <label><input type="checkbox" id="reactSpeed"> React to cursor speed</label>
   </div>
 
-  <div class="control-group inline">
+  <div class="control-group inline" data-tip="The brush slowly swells and shrinks on its own, so the line breathes">
     <label><input type="checkbox" id="pulseBrush"> Pulse brush size</label>
   </div>
 
-  <div class="control-group inline">
+  <div class="control-group inline" data-tip="Loose sparkles tumble off the cursor while you draw">
     <label><input type="checkbox" id="sparkleDust"> Cursor sparkle dust</label>
   </div>
 
-  <div class="control-group inline">
+  <div class="control-group inline" data-tip="The whole canvas spins slowly, even while you draw">
     <label><input type="checkbox" id="autoRotate"> Ambient auto-rotate</label>
   </div>
 
-  <div class="control-group" id="rotateGroup" style="display:none;">
+  <div class="control-group" id="rotateGroup" style="display:none;" data-tip="How fast the canvas spins">
     <label>Rotate speed <span id="rotateVal">0.15</span></label>
     <input type="range" id="rotateSpeed" min="0.05" max="2" step="0.05" value="0.15">
   </div>
@@ -194,7 +194,7 @@
   <div class="divider"></div>
   <p class="section-label">Color</p>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="Where colors come from &mdash; hues that cycle over time, a gradient by distance from the center, or one fixed color">
     <label>Color mode</label>
     <select id="colourMode">
       <option value="rainbow" selected>Rainbow cycle</option>
@@ -203,12 +203,12 @@
     </select>
   </div>
 
-  <div class="control-group" id="rainbowSpeedGroup">
+  <div class="control-group" id="rainbowSpeedGroup" data-tip="How quickly the colors cycle to the next hue">
     <label>Rainbow speed <span id="rainbowSpeedVal">0.7</span></label>
     <input type="range" id="rainbowSpeed" min="0.1" max="3" step="0.1" value="0.7">
   </div>
 
-  <div class="control-group" id="paletteGroup">
+  <div class="control-group" id="paletteGroup" data-tip="Which color family strokes draw from &mdash; or let the clock or your weather decide">
     <label>Palette</label>
     <select id="palette">
       <option value="full" selected>Full spectrum</option>
@@ -222,23 +222,23 @@
     </select>
   </div>
 
-  <div class="control-group" id="customPaletteGroup" style="display:none;">
+  <div class="control-group" id="customPaletteGroup" style="display:none;" data-tip="Pick 2&ndash;5 colors of your own &mdash; strokes blend smoothly through them, in order">
     <label>Your colors</label>
     <div id="customSwatches" class="swatch-row"></div>
     <p class="hint">Strokes blend smoothly through these, in order.</p>
   </div>
 
-  <div class="control-group" id="solidColorGroup" style="display:none;">
+  <div class="control-group" id="solidColorGroup" style="display:none;" data-tip="The one color every stroke uses">
     <label>Color</label>
     <input type="color" id="solidColor" value="#ff3e94">
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="Neon halo around each stroke &mdash; 0 is crisp, higher is dreamier">
     <label>Glow intensity <span id="glowVal">0</span></label>
     <input type="range" id="glow" min="0" max="30" value="0">
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="How solid each stroke is &mdash; lower lets layers shine through each other">
     <label>Stroke opacity <span id="strokeAlphaVal">92</span></label>
     <input type="range" id="strokeAlpha" min="20" max="100" value="92">
   </div>
@@ -248,23 +248,23 @@
 
   <div class="control-group">
     <div class="radio-row">
-      <label><input type="radio" name="trail" value="fade" checked> Fade (laser)</label>
-      <label><input type="radio" name="trail" value="permanent"> Permanent</label>
-      <label><input type="radio" name="trail" value="cycle"> Cycle (build &amp; fade)</label>
+      <label data-tip="Strokes glow and vanish after a moment, like a laser show"><input type="radio" name="trail" value="fade" checked> Fade (laser)</label>
+      <label data-tip="Strokes stay put until you clear the canvas"><input type="radio" name="trail" value="permanent"> Permanent</label>
+      <label data-tip="The piece builds for a while, then gently fades out and starts again"><input type="radio" name="trail" value="cycle"> Cycle (build &amp; fade)</label>
     </div>
   </div>
 
-  <div class="control-group" id="fadeGroup">
+  <div class="control-group" id="fadeGroup" data-tip="How quickly old strokes disappear &mdash; higher fades faster">
     <label>Fade speed <span id="fadeVal">4</span></label>
     <input type="range" id="fadeSpeed" min="1" max="40" value="4">
   </div>
 
-  <div class="control-group" id="cycleGroup" style="display:none;">
+  <div class="control-group" id="cycleGroup" style="display:none;" data-tip="How long the piece builds up before it starts fading">
     <label>Build time before fading <span id="cycleBuildVal">60s</span></label>
     <input type="range" id="cycleBuildSeconds" min="15" max="300" step="5" value="60">
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="Canvas background color &mdash; the panel and widgets tint themselves to match">
     <label>Theme color</label>
     <input type="color" id="bgColorPicker" value="#0a0a0a">
   </div>
@@ -274,17 +274,17 @@
     <div class="divider"></div>
     <p class="section-label">Depth</p>
 
-    <div class="control-group">
+    <div class="control-group" data-tip="How far strokes ripple toward and away from you in 3D">
       <label>3D depth <span id="depthVal">30</span></label>
       <input type="range" id="depthAmount" min="0" max="100" value="30">
     </div>
 
-    <div class="control-group inline">
+    <div class="control-group inline" data-tip="The camera sways gently on its own while the mandala draws itself">
       <label><input type="checkbox" id="depthDrift" checked> Ambient camera drift</label>
     </div>
 
     <div class="button-row">
-      <button id="resetCameraBtn">Reset camera</button>
+      <button id="resetCameraBtn" data-tip="Snap the 3D camera back to straight-on (or Shift + double-click)">Reset camera</button>
     </div>
 
     <p class="hint">Hold Shift and drag to tilt the camera &middot; two-finger drag on touch.</p>
@@ -293,7 +293,7 @@
   <div class="divider"></div>
   <p class="section-label">Renderer</p>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="Which engine draws the art &mdash; WebGL is faster and adds 3D depth, Classic is the safe fallback. Applies on your next new tab">
     <label>Graphics engine</label>
     <select id="rendererSelect">
       <option value="auto" selected>Auto (WebGL, recommended)</option>
@@ -306,49 +306,49 @@
   <p class="section-label">Presets</p>
 
   <div class="button-row">
-    <button id="presetDaily">&#10024; Today's mandala</button>
+    <button id="presetDaily" data-tip="A look seeded by today's date &mdash; same for everyone, new every day. It sets the dials; you (or ambient mode) do the drawing">&#10024; Today's mandala</button>
   </div>
   <div class="button-row">
-    <button id="presetNeon">Neon Dream</button>
-    <button id="presetGold">Golden Bloom</button>
+    <button id="presetNeon" data-tip="Sixteen-fold rainbow lines with heavy glow and a laser fade">Neon Dream</button>
+    <button id="presetGold" data-tip="Golden glowing ribbons that stay on the canvas forever">Golden Bloom</button>
   </div>
   <div class="button-row">
-    <button id="presetOcean">Deep Ocean</button>
-    <button id="presetChaos">Chaos Bloom</button>
+    <button id="presetOcean" data-tip="A drift of gradient dots in deep ocean blues">Deep Ocean</button>
+    <button id="presetChaos" data-tip="Sparkle bursts in sunset colors, fading fast">Chaos Bloom</button>
   </div>
   <div class="button-row">
-    <button id="presetStardust">Stardust</button>
-    <button id="presetRave">Laser Rave</button>
+    <button id="presetStardust" data-tip="Tiny champagne stars that pulse, shed dust, and slowly spin">Stardust</button>
+    <button id="presetRave" data-tip="Thin fast-cycling beams, quick fade, fast spin &mdash; a light show">Laser Rave</button>
   </div>
   <div class="button-row">
-    <button id="presetInk">Zen Ink</button>
-    <button id="presetAurora">Aurora</button>
+    <button id="presetInk" data-tip="Hairline pale strokes that build forever &mdash; quiet etching, no glow">Zen Ink</button>
+    <button id="presetAurora" data-tip="Wide translucent green curtains that linger and breathe">Aurora</button>
   </div>
   <div class="button-row">
-    <button id="presetFirefly">Fireflies</button>
-    <button id="presetCandy">Bubblegum</button>
+    <button id="presetFirefly" data-tip="Warm green-gold motes drifting with dust trails">Fireflies</button>
+    <button id="presetCandy" data-tip="Fat pastel candy dots that build up and melt away in cycles">Bubblegum</button>
   </div>
 
   <div id="userPresetRows"></div>
   <div class="button-row">
-    <button id="savePresetBtn">+ Save current look</button>
+    <button id="savePresetBtn" data-tip="Snapshot every current setting as a preset of your own (up to six)">+ Save current look</button>
   </div>
   <form id="savePresetForm" class="button-row" style="display:none;">
-    <input id="presetNameInput" type="text" maxlength="18" placeholder="Name this look" autocomplete="off">
+    <input id="presetNameInput" type="text" maxlength="18" placeholder="Name this look" autocomplete="off" data-tip="Give this look a name">
     <button type="submit">Save</button>
   </form>
 
   <div class="divider"></div>
 
   <div class="button-row">
-    <button id="clearBtn">Clear canvas</button>
-    <button id="saveBtn">Save image</button>
+    <button id="clearBtn" data-tip="Wipe the canvas clean &mdash; or press C">Clear canvas</button>
+    <button id="saveBtn" data-tip="Download the canvas as a PNG &mdash; or press S">Save image</button>
   </div>
   <div class="button-row">
-    <button id="randomBtn">&#127922; Surprise me</button>
+    <button id="randomBtn" data-tip="Roll a completely random look &mdash; or press R">&#127922; Surprise me</button>
   </div>
   <div class="button-row">
-    <button id="resetDefaultsBtn">&#8634; Reset to defaults</button>
+    <button id="resetDefaultsBtn" data-tip="Put every setting on this panel back to factory defaults">&#8634; Reset to defaults</button>
   </div>
 
   </div>
@@ -358,29 +358,29 @@
   <p class="section-label">Ambient drawing</p>
   <p class="hint" style="margin:0 0 14px;">When you stop moving, the mandala draws itself and re-rolls a random look as it goes. This tab decides what it's allowed to do.</p>
 
-  <div class="control-group inline">
+  <div class="control-group inline" data-tip="When your cursor rests for a moment, the mandala draws itself">
     <label><input type="checkbox" id="idleDraw" checked> Draw on its own when idle</label>
   </div>
 
-  <div class="control-group inline">
+  <div class="control-group inline" data-tip="Two patterns weave at the same time while it draws itself">
     <label><input type="checkbox" id="doubleIdlePattern"> Draw two patterns at once when idle</label>
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="How fast the invisible hand draws">
     <label>Ambient pace <span id="idlePaceVal">100%</span></label>
     <input type="range" id="idlePace" min="30" max="200" step="5" value="100">
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="How often the self-drawing rolls a new random style while it plays">
     <label>Ambient style change <span id="idleShuffleVal">10s</span></label>
     <input type="range" id="idleShuffleSeconds" min="5" max="30" step="1" value="10">
   </div>
 
-  <div class="control-group inline">
+  <div class="control-group inline" data-tip="Build a full piece, fade it out, pick a new style, and begin again &mdash; an endless exhibition">
     <label><input type="checkbox" id="ambGallery"> Gallery mode &mdash; build a piece, fade it out, begin anew</label>
   </div>
 
-  <div class="control-group" id="galleryGroup" style="display:none;">
+  <div class="control-group" id="galleryGroup" style="display:none;" data-tip="How long each piece gets to build before it dissolves">
     <label>Time to build each piece <span id="ambGallerySecVal">45s</span></label>
     <input type="range" id="ambGallerySec" min="15" max="180" step="5" value="45">
   </div>
@@ -390,17 +390,17 @@
   <p class="hint" style="margin:0 0 12px;">Anything unticked keeps the setting you chose in Customize.</p>
 
   <div class="ambient-grid">
-    <label><input type="checkbox" id="ambSymmetry" checked> Symmetry</label>
-    <label><input type="checkbox" id="ambSymMode" checked> Symmetry style</label>
-    <label><input type="checkbox" id="ambBrush" checked> Brush size</label>
-    <label><input type="checkbox" id="ambPulse" checked> Pulse brush</label>
-    <label><input type="checkbox" id="ambColours" checked> Colors</label>
-    <label><input type="checkbox" id="ambGlow" checked> Glow</label>
-    <label><input type="checkbox" id="ambAlpha" checked> Opacity</label>
-    <label><input type="checkbox" id="ambRotation" checked> Rotation</label>
-    <label><input type="checkbox" id="ambReact" checked> Speed react</label>
-    <label><input type="checkbox" id="ambSparkle" checked> Sparkle dust</label>
-    <label><input type="checkbox" id="ambTrails" checked> Trails &amp; fade</label>
+    <label data-tip="May change how many times strokes repeat"><input type="checkbox" id="ambSymmetry" checked> Symmetry</label>
+    <label data-tip="May switch between spokes, kaleidoscope, spirals, and grid"><input type="checkbox" id="ambSymMode" checked> Symmetry style</label>
+    <label data-tip="May change the brush thickness"><input type="checkbox" id="ambBrush" checked> Brush size</label>
+    <label data-tip="May turn brush pulsing on or off"><input type="checkbox" id="ambPulse" checked> Pulse brush</label>
+    <label data-tip="May pick new color modes and palettes"><input type="checkbox" id="ambColours" checked> Colors</label>
+    <label data-tip="May change the glow strength"><input type="checkbox" id="ambGlow" checked> Glow</label>
+    <label data-tip="May change stroke opacity"><input type="checkbox" id="ambAlpha" checked> Opacity</label>
+    <label data-tip="May spin the canvas at different speeds"><input type="checkbox" id="ambRotation" checked> Rotation</label>
+    <label data-tip="May toggle speed-reactive brush width"><input type="checkbox" id="ambReact" checked> Speed react</label>
+    <label data-tip="May toggle cursor sparkle dust"><input type="checkbox" id="ambSparkle" checked> Sparkle dust</label>
+    <label data-tip="May switch trail modes and fade speeds"><input type="checkbox" id="ambTrails" checked> Trails &amp; fade</label>
   </div>
 
   <div class="divider"></div>
@@ -408,34 +408,34 @@
   <p class="hint" style="margin:0 0 12px;">Which brushes ambient mode may paint with. Untick all to keep yours.</p>
 
   <div class="ambient-grid">
-    <label><input type="checkbox" data-style="line" checked> Flowing line</label>
-    <label><input type="checkbox" data-style="taper" checked> Calligraphy</label>
-    <label><input type="checkbox" data-style="ribbon" checked> Glowing ribbon</label>
-    <label><input type="checkbox" data-style="chalk" checked> Ink sketch</label>
-    <label><input type="checkbox" data-style="dashed" checked> Dashed line</label>
-    <label><input type="checkbox" data-style="dots" checked> Stippled dots</label>
-    <label><input type="checkbox" data-style="sparkle" checked> Sparkle burst</label>
-    <label><input type="checkbox" data-style="rails" checked> Twin rails</label>
-    <label><input type="checkbox" data-style="rings" checked> Echo rings</label>
-    <label><input type="checkbox" data-style="petals" checked> Petal trail</label>
+    <label data-tip="One smooth continuous curve"><input type="checkbox" data-style="line" checked> Flowing line</label>
+    <label data-tip="Width follows speed, like a calligraphy nib"><input type="checkbox" data-style="taper" checked> Calligraphy</label>
+    <label data-tip="A soft, wide glowing band"><input type="checkbox" data-style="ribbon" checked> Glowing ribbon</label>
+    <label data-tip="Several jittery passes, like a pencil sketch"><input type="checkbox" data-style="chalk" checked> Ink sketch</label>
+    <label data-tip="The line breaks into little dashes"><input type="checkbox" data-style="dashed" checked> Dashed line</label>
+    <label data-tip="Round dots stippled along the path"><input type="checkbox" data-style="dots" checked> Stippled dots</label>
+    <label data-tip="Small starbursts stamped as you go"><input type="checkbox" data-style="sparkle" checked> Sparkle burst</label>
+    <label data-tip="Two parallel lines running side by side"><input type="checkbox" data-style="rails" checked> Twin rails</label>
+    <label data-tip="Hollow circles echoing along the path"><input type="checkbox" data-style="rings" checked> Echo rings</label>
+    <label data-tip="Leaf-shaped petals shingled along the path"><input type="checkbox" data-style="petals" checked> Petal trail</label>
   </div>
 
   <div class="divider"></div>
   <p class="section-label">Limits</p>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="When ambient mode rolls symmetry, it stays inside this range (min and max sliders)">
     <label>Symmetry <span><span id="ambSymMinVal">6</span>&ndash;<span id="ambSymMaxVal">26</span></span></label>
     <input type="range" id="ambSymMin" min="2" max="60" value="6">
     <input type="range" id="ambSymMax" min="2" max="60" value="26">
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="Rolled brush sizes stay inside this range">
     <label>Brush size <span><span id="ambBrushMinVal">1</span>&ndash;<span id="ambBrushMaxVal">12</span></span></label>
     <input type="range" id="ambBrushMin" min="1" max="20" value="1">
     <input type="range" id="ambBrushMax" min="1" max="20" value="12">
   </div>
 
-  <div class="control-group">
+  <div class="control-group" data-tip="Rolled glow stays inside this range">
     <label>Glow <span><span id="ambGlowMinVal">4</span>&ndash;<span id="ambGlowMaxVal">24</span></span></label>
     <input type="range" id="ambGlowMin" min="0" max="30" value="4">
     <input type="range" id="ambGlowMax" min="0" max="30" value="24">
@@ -445,13 +445,13 @@
   <p class="section-label">Patterns</p>
 
   <div class="ambient-grid">
-    <label><input type="checkbox" data-pattern="rose" checked> Rose</label>
-    <label><input type="checkbox" data-pattern="spiral" checked> Spiral</label>
-    <label><input type="checkbox" data-pattern="lissajous" checked> Lissajous</label>
-    <label><input type="checkbox" data-pattern="drift" checked> Drift</label>
-    <label><input type="checkbox" data-pattern="epicycle" checked> Spirograph</label>
-    <label><input type="checkbox" data-pattern="lemniscate" checked> Figure-eight</label>
-    <label><input type="checkbox" data-pattern="wave" checked> Waves</label>
+    <label data-tip="Flower-petal loops around the center"><input type="checkbox" data-pattern="rose" checked> Rose</label>
+    <label data-tip="Winds steadily outward from the middle"><input type="checkbox" data-pattern="spiral" checked> Spiral</label>
+    <label data-tip="Woven harmonic curves"><input type="checkbox" data-pattern="lissajous" checked> Lissajous</label>
+    <label data-tip="A loose, wandering meander"><input type="checkbox" data-pattern="drift" checked> Drift</label>
+    <label data-tip="Circles rolling on circles, spirograph style"><input type="checkbox" data-pattern="epicycle" checked> Spirograph</label>
+    <label data-tip="Endless figure-eights"><input type="checkbox" data-pattern="lemniscate" checked> Figure-eight</label>
+    <label data-tip="Rippling waves around the ring"><input type="checkbox" data-pattern="wave" checked> Waves</label>
   </div>
 
   </div>
@@ -500,6 +500,7 @@
 </div>
 
 <script src="js/lib/browser-polyfill.min.js"></script>
+<script src="js/tooltip.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/render-loader.js"></script>
 <script src="js/weather.js"></script>

@@ -149,11 +149,12 @@
       row.className = 'button-row preset-user-row';
       const btn = document.createElement('button');
       btn.textContent = p.name;
+      btn.dataset.tip = 'Your saved look — click to apply it';
       btn.addEventListener('click', () => applyFullConfig(p.config));
       const del = document.createElement('button');
       del.className = 'preset-del';
       del.textContent = '×';
-      del.title = 'Delete this preset';
+      del.dataset.tip = 'Delete this preset';
       del.addEventListener('click', () => {
         userPresets.splice(i, 1);
         MandalaStorage.patch('userPresets', userPresets);

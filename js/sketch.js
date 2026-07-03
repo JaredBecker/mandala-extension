@@ -1041,13 +1041,13 @@ function renderCustomSwatches(){
   });
   if (customPalette.length > 2){
     const del = document.createElement('button');
-    del.type = 'button'; del.textContent = '−'; del.title = 'Remove the last color';
+    del.type = 'button'; del.textContent = '−'; del.dataset.tip = 'Remove the last color';
     del.addEventListener('click', () => { customPalette.pop(); renderCustomSwatches(); saveMandalaState(); });
     wrap.appendChild(del);
   }
   if (customPalette.length < 5){
     const add = document.createElement('button');
-    add.type = 'button'; add.textContent = '+'; add.title = 'Add a color';
+    add.type = 'button'; add.textContent = '+'; add.dataset.tip = 'Add another color (up to five)';
     add.addEventListener('click', () => { customPalette.push('#f2c14e'); renderCustomSwatches(); saveMandalaState(); });
     wrap.appendChild(add);
   }

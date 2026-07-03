@@ -38,7 +38,7 @@
     a.href = link.url;
     a.target = '_blank';
     a.rel = 'noopener';
-    a.title = 'Right-click to remove';
+    a.dataset.tip = 'Right-click to remove this link';
     const glyph = document.createElement('span');
     glyph.className = 'glyph';
     glyph.textContent = '🔗';
@@ -56,6 +56,7 @@
       const add = document.createElement('button');
       add.id = 'addLinkBtn';
       add.textContent = '+ Add link';
+      add.dataset.tip = 'Pin a site you visit often';
       add.addEventListener('click', () => { adding = true; render(); });
       el.appendChild(add);
       return;

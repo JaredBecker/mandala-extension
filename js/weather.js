@@ -78,7 +78,7 @@
     locations.forEach((loc) => {
       const dot = document.createElement('span');
       dot.className = 'loc-dot' + (loc.id === active.id ? ' active' : '');
-      dot.title = loc.label;
+      dot.dataset.tip = loc.label;
       dot.addEventListener('click', () => {
         MandalaStorage.patch('activeLocationId', loc.id).then(render);
       });
