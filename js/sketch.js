@@ -558,9 +558,11 @@ function paletteHue(t){
 // stamp pitch per style, scaled to the rendered shape size (0 = continuous
 // styles that draw every frame)
 function stampSpacing(sw){
-  if (strokeStyleMode === 'sparkle') return max(sw, 5) * 3.2;
-  if (strokeStyleMode === 'rings') return max(sw * 1.4, 8) * 2.6;
-  if (strokeStyleMode === 'petals') return max(sw * 1.3, 8) * 2.2;
+  // tight enough that stamps partially overlap: a new shape lands every few
+  // pixels of travel, so drawing feels continuous rather than "wait...stamp"
+  if (strokeStyleMode === 'sparkle') return max(sw, 5) * 2.2;
+  if (strokeStyleMode === 'rings') return max(sw * 1.4, 8) * 1.8;
+  if (strokeStyleMode === 'petals') return max(sw * 1.3, 8) * 1.2;
   return 0;
 }
 
