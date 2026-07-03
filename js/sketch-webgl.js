@@ -52,6 +52,12 @@ let hueShift = 0;
 let lastX = null, lastY = null;
 let particles = [];
 
+// screen-space endpoints of last frame's strokes: a stroke whose start
+// matches one of them is a continuation, so its start cap gets subtracted
+// in the shader instead of double-blending over the previous end cap
+let prevStrokeEnds = [];
+let curStrokeEnds = [];
+
 // ---------- Depth: perspective camera over the art plane ----------
 // The art buffer stays strictly 2D; Depth tilts the PLANE it's shown on.
 // The camera itself never moves — camPitch/camYaw tilt the plane's model
@@ -506,12 +512,12 @@ let flatVerts = [];
 const CAPSULE_VS = `
 attribute vec2 aPos;
 attribute vec4 aSeg;
-attribute vec2 aParam;
+attribute vec3 aParam;
 attribute vec4 aColor;
 uniform vec2 uRes;
 varying vec2 vPos;
 varying vec4 vSeg;
-varying vec2 vParam;
+varying vec3 vParam;
 varying vec4 vColor;
 void main(){
   vPos = aPos; vSeg = aSeg; vParam = aParam; vColor = aColor;
@@ -520,7 +526,14 @@ void main(){
 
 // distance-to-segment gives a capsule (round caps for free); the smoothstep
 // edge is the antialiasing; the exp() term is the glow halo standing in for
-// canvas shadowBlur
+// canvas shadowBlur.
+//
+// Strokes arrive one short segment per frame, and translucent round caps
+// double-blend where consecutive segments meet — visible as a bright bead
+// at every joint (a "chain of circles" at slow speeds). For continuing
+// segments (aParam.z = 0) the shader therefore composes against the cap the
+// PREVIOUS segment already painted around A: the extra alpha needed so the
+// union blends exactly once is (max(seg,cap) - cap) / (1 - cap).
 const CAPSULE_FS = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
@@ -529,8 +542,16 @@ precision mediump float;
 #endif
 varying vec2 vPos;
 varying vec4 vSeg;
-varying vec2 vParam;
+varying vec3 vParam;
 varying vec4 vColor;
+float cover(float d, float hw, float glow){
+  float a = 1.0 - smoothstep(hw - 0.75, hw + 0.75, d);
+  if (glow > 0.01){
+    float t = max(d - hw, 0.0) / glow;
+    a = max(a, exp(-t * t * 3.0) * 0.5);
+  }
+  return a;
+}
 void main(){
   vec2 pa = vPos - vSeg.xy;
   vec2 ba = vSeg.zw - vSeg.xy;
@@ -538,10 +559,10 @@ void main(){
   float d = length(pa - ba * h);
   float hw = vParam.x;
   float glow = vParam.y;
-  float a = 1.0 - smoothstep(hw - 0.75, hw + 0.75, d);
-  if (glow > 0.01){
-    float t = max(d - hw, 0.0) / glow;
-    a = max(a, exp(-t * t * 3.0) * 0.5);
+  float a = cover(d, hw, glow);
+  if (vParam.z < 0.5){
+    float aCap = cover(length(pa), hw, glow);
+    a = clamp((max(a, aCap) - aCap) / max(1.0 - aCap, 1e-4), 0.0, 1.0);
   }
   a *= vColor.a;
   if (a < 0.003) discard;
@@ -700,7 +721,10 @@ function clearArt(){
 // flushed into the art buffer once per frame (order within a batch is
 // preserved by GL, so blending stacks the same way sequential p5 calls did)
 
-function emitCapsule(ax, ay, bx, by, halfWidth, glowRadius, r, g, b, a){
+// cap = 1: stand-alone stamp with full round caps (dots, particles, halos,
+// or the first segment of a stroke). cap = 0: continues an existing stroke,
+// so the shader subtracts the cap the previous segment already painted at A.
+function emitCapsule(ax, ay, bx, by, halfWidth, glowRadius, r, g, b, a, cap){
   const pad = halfWidth + glowRadius + 1.5;
   let dx = bx - ax, dy = by - ay;
   const len = hypot(dx, dy);
@@ -717,7 +741,7 @@ function emitCapsule(ax, ay, bx, by, halfWidth, glowRadius, r, g, b, a){
   const idx = [0, 1, 2, 1, 3, 2];
   for (let i = 0; i < 6; i++){
     const k = idx[i] * 2;
-    capsuleVerts.push(c[k], c[k + 1], ax, ay, bx, by, halfWidth, glowRadius, r, g, b, a);
+    capsuleVerts.push(c[k], c[k + 1], ax, ay, bx, by, halfWidth, glowRadius, cap, r, g, b, a);
   }
 }
 
@@ -770,16 +794,16 @@ function flushBatches(){
     gl.uniform2f(capsuleProg.uniforms.uRes, bufferSize, bufferSize);
     gl.bindBuffer(gl.ARRAY_BUFFER, capsuleVBO);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(capsuleVerts), gl.DYNAMIC_DRAW);
-    const stride = 12 * 4;
+    const stride = 13 * 4;
     gl.enableVertexAttribArray(capsuleProg.attribs.aPos);
     gl.vertexAttribPointer(capsuleProg.attribs.aPos, 2, gl.FLOAT, false, stride, 0);
     gl.enableVertexAttribArray(capsuleProg.attribs.aSeg);
     gl.vertexAttribPointer(capsuleProg.attribs.aSeg, 4, gl.FLOAT, false, stride, 8);
     gl.enableVertexAttribArray(capsuleProg.attribs.aParam);
-    gl.vertexAttribPointer(capsuleProg.attribs.aParam, 2, gl.FLOAT, false, stride, 24);
+    gl.vertexAttribPointer(capsuleProg.attribs.aParam, 3, gl.FLOAT, false, stride, 24);
     gl.enableVertexAttribArray(capsuleProg.attribs.aColor);
-    gl.vertexAttribPointer(capsuleProg.attribs.aColor, 4, gl.FLOAT, false, stride, 32);
-    gl.drawArrays(gl.TRIANGLES, 0, capsuleVerts.length / 12);
+    gl.vertexAttribPointer(capsuleProg.attribs.aColor, 4, gl.FLOAT, false, stride, 36);
+    gl.drawArrays(gl.TRIANGLES, 0, capsuleVerts.length / 13);
     gl.disableVertexAttribArray(capsuleProg.attribs.aPos);
     gl.disableVertexAttribArray(capsuleProg.attribs.aSeg);
     gl.disableVertexAttribArray(capsuleProg.attribs.aParam);
@@ -890,6 +914,9 @@ function frame(nowMs){
     }
     fadePass(fadeAlpha);
   }
+
+  prevStrokeEnds = curStrokeEnds;
+  curStrokeEnds = [];
 
   updateAndDrawParticles();
 
@@ -1055,21 +1082,26 @@ function drawMandalaStroke(x1, y1, x2, y2){
     strokeColour.a = strokeAlpha;
   }
 
+  // continuing an existing stroke? (its start is where a stroke ended last
+  // frame — mouse path and each idle pen all match on exact coordinates)
+  const continuing = prevStrokeEnds.some((p) => p[0] === x1 && p[1] === y1);
+  curStrokeEnds.push([x2, y2]);
+
   const angleStep = TWO_PI / symmetry;
   let ang = 0;
   for (let i = 0; i < symmetry; i++){
     ang += angleStep;
     const cosA = cos(ang), sinA = sin(ang);
-    drawArm(pdx, pdy, dx, dy, sw, strokeColour, cx, cy, cosA, sinA, false);
+    drawArm(pdx, pdy, dx, dy, sw, strokeColour, cx, cy, cosA, sinA, false, continuing);
     if (mirror){
-      drawArm(pdx, pdy, dx, dy, sw, strokeColour, cx, cy, cosA, sinA, true);
+      drawArm(pdx, pdy, dx, dy, sw, strokeColour, cx, cy, cosA, sinA, true, continuing);
     }
   }
 }
 
 // one symmetry arm: rotate/mirror local coords into art-buffer world space
 // on the CPU
-function drawArm(pdx, pdy, dx, dy, sw, col, cx, cy, cosA, sinA, mirrored){
+function drawArm(pdx, pdy, dx, dy, sw, col, cx, cy, cosA, sinA, mirrored, continuing){
   if (mirrored){ pdy = -pdy; dy = -dy; }
   const ax = cx + pdx * cosA - pdy * sinA;
   const ay = cy + pdx * sinA + pdy * cosA;
@@ -1083,21 +1115,23 @@ function drawArm(pdx, pdy, dx, dy, sw, col, cx, cy, cosA, sinA, mirrored){
   const [r, g, b] = hsbToRgb(col.h, col.s, col.b);
   const a = col.a / 100;
   const glow = glowIntensity;
+  const cap = continuing ? 0 : 1;
 
   if (strokeStyleMode === 'line'){
-    emitCapsule(ax, ay, bx, by, sw / 2, glow, r, g, b, a);
+    emitCapsule(ax, ay, bx, by, sw / 2, glow, r, g, b, a, cap);
 
   } else if (strokeStyleMode === 'ribbon'){
-    emitCapsule(ax, ay, bx, by, (sw * 2.2) / 2, glow, r, g, b, 0.28);
-    emitCapsule(ax, ay, bx, by, max(sw * 0.4, 1) / 2, glow, r, g, b, a);
+    emitCapsule(ax, ay, bx, by, (sw * 2.2) / 2, glow, r, g, b, 0.28, cap);
+    emitCapsule(ax, ay, bx, by, max(sw * 0.4, 1) / 2, glow, r, g, b, a, cap);
 
   } else if (strokeStyleMode === 'dots'){
-    emitCapsule(bx, by, bx, by, sw / 2, glow, r, g, b, a);
+    // dots/sparkles are stand-alone stamps — beading between them is the look
+    emitCapsule(bx, by, bx, by, sw / 2, glow, r, g, b, a, 1);
 
   } else if (strokeStyleMode === 'sparkle'){
     // soft halo standing in for the star's shadowBlur, then the star itself
     if (glow > 0){
-      emitCapsule(bx, by, bx, by, 0, glow + sw * 0.5, r, g, b, a);
+      emitCapsule(bx, by, bx, by, 0, glow + sw * 0.5, r, g, b, a, 1);
     }
     emitStar(bx, by, sw * 0.4, sw * 1.3, 4, r, g, b, a);
   }
@@ -1125,7 +1159,7 @@ function updateAndDrawParticles(){
     p.x += p.vx; p.y += p.vy; p.life -= 6;
     if (p.life <= 0){ particles.splice(i, 1); continue; }
     const [r, g, b] = hsbToRgb(p.col.h, p.col.s, p.col.b);
-    emitCapsule(p.x, p.y, p.x, p.y, 1.5, 0, r, g, b, (p.life / 255) * 0.9);
+    emitCapsule(p.x, p.y, p.x, p.y, 1.5, 0, r, g, b, (p.life / 255) * 0.9, 1);
   }
 }
 
