@@ -555,17 +555,6 @@ function paletteHue(t){
   return (range[0] + t * (range[1] - range[0])) % 360;
 }
 
-// stamp pitch per style, scaled to the rendered shape size (0 = continuous
-// styles that draw every frame)
-function stampSpacing(sw){
-  // tight enough that stamps partially overlap: a new shape lands every few
-  // pixels of travel, so drawing feels continuous rather than "wait...stamp"
-  if (strokeStyleMode === 'sparkle') return max(sw, 5) * 2.2;
-  if (strokeStyleMode === 'rings') return max(sw * 1.4, 8) * 1.8;
-  if (strokeStyleMode === 'petals') return max(sw * 1.3, 8) * 1.2;
-  return 0;
-}
-
 function drawStar(x, y, radius1, radius2, npoints){
   const angle = TWO_PI / npoints;
   const halfAngle = angle / 2.0;
@@ -622,26 +611,10 @@ function drawMandalaStroke(x1, y1, x2, y2){
   artLayer.drawingContext.shadowBlur = glowIntensity;
   artLayer.drawingContext.shadowColor = strokeColour.toString();
 
-  // stamped styles drop their shape at even distances along the path (the
-  // leftover distance carries across frames), so each stamp reads as its
-  // own star/ring/petal instead of smearing into a continuous glow line
-  const spacing = stampSpacing(sw);
-  const targets = []; // centre-relative endpoints to draw this frame
-  if (spacing > 0){
-    const segLen = Math.hypot(dx - pdx, dy - pdy);
-    let since = continuing ? prev[2] : spacing; // fresh strokes stamp immediately
-    let pos = spacing - since;
-    if (pos < 0) pos = 0;
-    while (pos <= segLen){
-      const t = segLen > 1e-6 ? pos / segLen : 0;
-      targets.push([pdx + (dx - pdx) * t, pdy + (dy - pdy) * t]);
-      pos += spacing;
-    }
-    curStrokeEnds.push([x2, y2, segLen - (pos - spacing), p2.x, p2.y]);
-  } else {
-    targets.push([dx, dy]);
-    curStrokeEnds.push([x2, y2, 0, p2.x, p2.y]);
-  }
+  // stamped styles (sparkle/rings/petals) drop one shape per frame at the
+  // cursor, exactly like stippled dots: move slowly and the shapes overlap
+  // into a solid line, move fast and they spread out into separate stamps
+  curStrokeEnds.push([x2, y2, 0, p2.x, p2.y]);
 
   artLayer.push();
   artLayer.translate(cx, cy);
@@ -649,15 +622,11 @@ function drawMandalaStroke(x1, y1, x2, y2){
 
   for (let i = 0; i < symmetry; i++){
     artLayer.rotate(angleStep);
-    for (const [tx, ty] of targets){
-      drawArm(pdx, pdy, tx, ty, sw, strokeColour);
-    }
+    drawArm(pdx, pdy, dx, dy, sw, strokeColour);
     if (mirror){
       artLayer.push();
       artLayer.scale(1, -1);
-      for (const [tx, ty] of targets){
-        drawArm(pdx, pdy, tx, ty, sw, strokeColour);
-      }
+      drawArm(pdx, pdy, dx, dy, sw, strokeColour);
       artLayer.pop();
     }
   }

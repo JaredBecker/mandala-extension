@@ -1107,51 +1107,21 @@ function drawMandalaStroke(x1, y1, x2, y2){
     strokeColour.a = strokeAlpha;
   }
 
-  // stamped styles drop their shape at even distances along the path (the
-  // leftover distance carries across frames in curStrokeEnds), so each
-  // stamp reads as its own star/ring/petal instead of smearing into a
-  // continuous glow line
-  const spacing = stampSpacing(sw);
-  const targets = []; // stroke-relative endpoints to draw this frame
-  if (spacing > 0){
-    const segLen = hypot(dx - pdx, dy - pdy);
-    let since = continuing ? prev[2] : spacing; // fresh strokes stamp immediately
-    let pos = spacing - since;
-    if (pos < 0) pos = 0;
-    while (pos <= segLen){
-      const t = segLen > 1e-6 ? pos / segLen : 0;
-      targets.push([pdx + (dx - pdx) * t, pdy + (dy - pdy) * t]);
-      pos += spacing;
-    }
-    curStrokeEnds.push([x2, y2, segLen - (pos - spacing), p2.x, p2.y]);
-  } else {
-    targets.push([dx, dy]);
-    curStrokeEnds.push([x2, y2, 0, p2.x, p2.y]);
-  }
+  // stamped styles (sparkle/rings/petals) drop one shape per frame at the
+  // cursor, exactly like stippled dots: move slowly and the shapes overlap
+  // into a solid line, move fast and they spread out into separate stamps
+  curStrokeEnds.push([x2, y2, 0, p2.x, p2.y]);
 
   const angleStep = TWO_PI / symmetry;
   let ang = 0;
   for (let i = 0; i < symmetry; i++){
     ang += angleStep;
     const cosA = cos(ang), sinA = sin(ang);
-    for (const [tx, ty] of targets){
-      drawArm(pdx, pdy, tx, ty, sw, strokeColour, cx, cy, cosA, sinA, false, continuing);
-      if (mirror){
-        drawArm(pdx, pdy, tx, ty, sw, strokeColour, cx, cy, cosA, sinA, true, continuing);
-      }
+    drawArm(pdx, pdy, dx, dy, sw, strokeColour, cx, cy, cosA, sinA, false, continuing);
+    if (mirror){
+      drawArm(pdx, pdy, dx, dy, sw, strokeColour, cx, cy, cosA, sinA, true, continuing);
     }
   }
-}
-
-// stamp pitch per style, scaled to the rendered shape size (0 = continuous
-// styles that draw every frame)
-function stampSpacing(sw){
-  // tight enough that stamps partially overlap: a new shape lands every few
-  // pixels of travel, so drawing feels continuous rather than "wait...stamp"
-  if (strokeStyleMode === 'sparkle') return max(sw, 5) * 2.2;
-  if (strokeStyleMode === 'rings') return max(sw * 1.4, 8) * 1.8;
-  if (strokeStyleMode === 'petals') return max(sw * 1.3, 8) * 1.2;
-  return 0;
 }
 
 // one symmetry arm: rotate/mirror local coords into art-buffer world space
