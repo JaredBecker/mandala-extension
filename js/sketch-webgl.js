@@ -247,13 +247,14 @@ let idleConfigTimer = null;
 // stored preferences by main.js via applyAmbientState
 let ambient = {
   randomize: {
-    symmetry: true, brush: true, strokeStyle: true, pulseBrush: true,
+    symmetry: true, brush: true, pulseBrush: true,
     colours: true, glow: true, strokeAlpha: true, rotation: true,
     reactToSpeed: true, sparkleDust: true, trails: true
   },
   symmetryMin: 6, symmetryMax: 26,
   brushMin: 1, brushMax: 12,
   glowMin: 4, glowMax: 24,
+  styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals'],
   patterns: IDLE_PATH_ALGORITHMS.slice()
 };
 window.applyAmbientState = (a) => { ambient = a; };
@@ -268,7 +269,8 @@ function randomCosmeticConfig(){
   const span = (lo, hi) => floor(random(min(lo, hi), max(lo, hi) + 1));
   cfg.mirror = true;
   if (R.symmetry) cfg.symmetry = span(ambient.symmetryMin, ambient.symmetryMax);
-  if (R.strokeStyle) cfg.strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle']);
+  // stroke styles are their own pool (all unticked = keep the user's brush)
+  if (ambient.styles && ambient.styles.length) cfg.strokeStyleMode = random(ambient.styles);
   if (R.pulseBrush) cfg.pulseBrush = random() > 0.5;
   if (R.colours){
     cfg.colourMode = random(['rainbow', 'gradient', 'solid']);
@@ -559,10 +561,22 @@ void main(){
   float d = length(pa - ba * h);
   float hw = vParam.x;
   float glow = vParam.y;
-  float a = cover(d, hw, glow);
-  if (vParam.z < 0.5){
-    float aCap = cover(length(pa), hw, glow);
-    a = clamp((max(a, aCap) - aCap) / max(1.0 - aCap, 1e-4), 0.0, 1.0);
+  float a;
+  if (vParam.z > 1.5){
+    // ring stamp: a bright wall at radius hw, hollow inside
+    float wall = max(1.5, hw * 0.16);
+    float dr = abs(d - hw);
+    a = 1.0 - smoothstep(wall - 0.75, wall + 0.75, dr);
+    if (glow > 0.01){
+      float t = max(dr - wall, 0.0) / glow;
+      a = max(a, exp(-t * t * 3.0) * 0.5);
+    }
+  } else {
+    a = cover(d, hw, glow);
+    if (vParam.z < 0.5){
+      float aCap = cover(length(pa), hw, glow);
+      a = clamp((max(a, aCap) - aCap) / max(1.0 - aCap, 1e-4), 0.0, 1.0);
+    }
   }
   a *= vColor.a;
   if (a < 0.003) discard;
@@ -725,7 +739,9 @@ function clearArt(){
 // or the first segment of a stroke). cap = 0: continues an existing stroke,
 // so the shader subtracts the cap the previous segment already painted at A.
 function emitCapsule(ax, ay, bx, by, halfWidth, glowRadius, r, g, b, a, cap){
-  const pad = halfWidth + glowRadius + 1.5;
+  // slack covers antialiasing plus the ring mode's wall, which extends
+  // beyond the nominal radius
+  const pad = halfWidth + glowRadius + max(6, halfWidth * 0.2);
   let dx = bx - ax, dy = by - ay;
   const len = hypot(dx, dy);
   if (len < 1e-6){ dx = 1; dy = 0; } else { dx /= len; dy /= len; }
@@ -1134,6 +1150,30 @@ function drawArm(pdx, pdy, dx, dy, sw, col, cx, cy, cosA, sinA, mirrored, contin
       emitCapsule(bx, by, bx, by, 0, glow + sw * 0.5, r, g, b, a, 1);
     }
     emitStar(bx, by, sw * 0.4, sw * 1.3, 4, r, g, b, a);
+
+  } else if (strokeStyleMode === 'rails'){
+    // two thin parallel lines riding either side of the stroke path (full
+    // caps: the offset joints drift on curves, so cap-subtraction would
+    // notch them instead of smoothing them)
+    let ddx = bx - ax, ddy = by - ay;
+    const dl = hypot(ddx, ddy);
+    if (dl < 1e-6){ ddx = 1; ddy = 0; } else { ddx /= dl; ddy /= dl; }
+    const ox = -ddy * sw * 0.9, oy = ddx * sw * 0.9;
+    const railHw = max(sw * 0.35, 1) / 2;
+    emitCapsule(ax + ox, ay + oy, bx + ox, by + oy, railHw, glow, r, g, b, a, 1);
+    emitCapsule(ax - ox, ay - oy, bx - ox, by - oy, railHw, glow, r, g, b, a, 1);
+
+  } else if (strokeStyleMode === 'rings'){
+    emitCapsule(bx, by, bx, by, sw * 1.2, glow, r, g, b, a, 2);
+
+  } else if (strokeStyleMode === 'petals'){
+    // an elongated stamp oriented along the motion direction
+    let ddx = bx - ax, ddy = by - ay;
+    const dl = hypot(ddx, ddy);
+    if (dl < 1e-6){ ddx = 1; ddy = 0; } else { ddx /= dl; ddy /= dl; }
+    const half = sw * 1.1;
+    emitCapsule(bx - ddx * half, by - ddy * half, bx + ddx * half, by + ddy * half,
+      max(sw * 0.45, 1.5), glow, r, g, b, a, 1);
   }
 }
 
@@ -1510,7 +1550,7 @@ function randomizeSettings($){
   mirror = random() > 0.35;
   $('mirror').checked = mirror;
 
-  strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle']);
+  strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals']);
   $('strokeStyle').value = strokeStyleMode;
 
   pulseBrush = random() > 0.5;

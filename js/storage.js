@@ -33,15 +33,20 @@
     // rolls; `patterns` is the pool of idle path algorithms it may pick
     ambient: {
       randomize: {
-        symmetry: true, brush: true, strokeStyle: true, pulseBrush: true,
+        symmetry: true, brush: true, pulseBrush: true,
         colours: true, glow: true, strokeAlpha: true, rotation: true,
         reactToSpeed: true, sparkleDust: true, trails: true
       },
       symmetryMin: 6, symmetryMax: 26,
       brushMin: 1, brushMax: 12,
       glowMin: 4, glowMax: 24,
+      // stroke styles the shuffle may pick; empty = keep the user's style
+      styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals'],
       patterns: ['rose', 'spiral', 'lissajous', 'drift', 'epicycle', 'lemniscate', 'wave']
     },
+    // the currently shown quote and when it was rolled; a new random one is
+    // picked once the timestamp is 24h old (see quotes.js)
+    quote: { index: -1, pickedAt: 0 },
     panelCollapsed: true,
     todoCollapsed: false,
     todos: [],

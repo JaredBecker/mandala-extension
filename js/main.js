@@ -37,13 +37,22 @@
   };
   if (typeof applyAmbientState === 'function') applyAmbientState(ambient);
 
-  [['ambSymmetry', 'symmetry'], ['ambBrush', 'brush'], ['ambStrokeStyle', 'strokeStyle'],
+  [['ambSymmetry', 'symmetry'], ['ambBrush', 'brush'],
    ['ambPulse', 'pulseBrush'], ['ambColours', 'colours'], ['ambGlow', 'glow'],
    ['ambAlpha', 'strokeAlpha'], ['ambRotation', 'rotation'], ['ambReact', 'reactToSpeed'],
    ['ambSparkle', 'sparkleDust'], ['ambTrails', 'trails']].forEach(([id, key]) => {
     const el = $id(id);
     el.checked = ambient.randomize[key];
     el.addEventListener('change', () => { ambient.randomize[key] = el.checked; pushAmbient(); });
+  });
+
+  document.querySelectorAll('#tab-ambient [data-style]').forEach((cb) => {
+    cb.checked = ambient.styles.includes(cb.dataset.style);
+    cb.addEventListener('change', () => {
+      ambient.styles = [...document.querySelectorAll('#tab-ambient [data-style]:checked')]
+        .map((c) => c.dataset.style);
+      pushAmbient();
+    });
   });
 
   // min/max pairs — dragging one past the other drags its partner along
@@ -90,7 +99,7 @@
 
   MandalaWeather.init(state);
   MandalaGreeting.init(state);
-  MandalaQuotes.init();
+  MandalaQuotes.init(state);
   MandalaTodo.init(state);
   MandalaLinks.init(state);
   MandalaSticky.init(state);

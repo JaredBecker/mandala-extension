@@ -118,13 +118,14 @@ let idleConfigTimer = null;
 // stored preferences by main.js via applyAmbientState
 let ambient = {
   randomize: {
-    symmetry: true, brush: true, strokeStyle: true, pulseBrush: true,
+    symmetry: true, brush: true, pulseBrush: true,
     colours: true, glow: true, strokeAlpha: true, rotation: true,
     reactToSpeed: true, sparkleDust: true, trails: true
   },
   symmetryMin: 6, symmetryMax: 26,
   brushMin: 1, brushMax: 12,
   glowMin: 4, glowMax: 24,
+  styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals'],
   patterns: IDLE_PATH_ALGORITHMS.slice()
 };
 window.applyAmbientState = (a) => { ambient = a; };
@@ -139,7 +140,8 @@ function randomCosmeticConfig(){
   const span = (lo, hi) => floor(random(min(lo, hi), max(lo, hi) + 1));
   cfg.mirror = true; // always on — unmirrored ambient art reads as scribble
   if (R.symmetry) cfg.symmetry = span(ambient.symmetryMin, ambient.symmetryMax);
-  if (R.strokeStyle) cfg.strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle']);
+  // stroke styles are their own pool (all unticked = keep the user's brush)
+  if (ambient.styles && ambient.styles.length) cfg.strokeStyleMode = random(ambient.styles);
   if (R.pulseBrush) cfg.pulseBrush = random() > 0.5;
   if (R.colours){
     cfg.colourMode = random(['rainbow', 'gradient', 'solid']);
@@ -642,6 +644,35 @@ function drawArm(pdx, pdy, dx, dy, sw, strokeColour){
     artLayer.noStroke();
     artLayer.fill(strokeColour);
     drawStar(dx, dy, sw * 0.4, sw * 1.3, 4);
+
+  } else if (strokeStyleMode === 'rails'){
+    // two thin parallel lines riding either side of the stroke path
+    let ddx = dx - pdx, ddy = dy - pdy;
+    const dl = Math.hypot(ddx, ddy);
+    if (dl < 1e-6){ ddx = 1; ddy = 0; } else { ddx /= dl; ddy /= dl; }
+    const ox = -ddy * sw * 0.9, oy = ddx * sw * 0.9;
+    artLayer.noFill();
+    artLayer.stroke(strokeColour);
+    artLayer.strokeWeight(max(sw * 0.35, 1));
+    artLayer.strokeCap(ROUND);
+    artLayer.line(pdx + ox, pdy + oy, dx + ox, dy + oy);
+    artLayer.line(pdx - ox, pdy - oy, dx - ox, dy - oy);
+
+  } else if (strokeStyleMode === 'rings'){
+    artLayer.noFill();
+    artLayer.stroke(strokeColour);
+    artLayer.strokeWeight(max(1.5, sw * 0.16));
+    artLayer.circle(dx, dy, sw * 2.4);
+
+  } else if (strokeStyleMode === 'petals'){
+    // an elongated stamp oriented along the motion direction
+    artLayer.noStroke();
+    artLayer.fill(strokeColour);
+    artLayer.push();
+    artLayer.translate(dx, dy);
+    artLayer.rotate(Math.atan2(dy - pdy, dx - pdx));
+    artLayer.ellipse(0, 0, sw * 2.9, sw * 1.1);
+    artLayer.pop();
   }
 }
 
@@ -1014,7 +1045,7 @@ function randomizeSettings($){
   mirror = random() > 0.35;
   $('mirror').checked = mirror;
 
-  strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle']);
+  strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals']);
   $('strokeStyle').value = strokeStyleMode;
 
   pulseBrush = random() > 0.5;
