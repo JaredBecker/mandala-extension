@@ -580,7 +580,16 @@ function drawStar(x, y, radius1, radius2, npoints){
 }
 
 function drawMandalaStroke(x1, y1, x2, y2){
-  const p1 = toBufferSpace(x1, y1);
+  // continuing an existing stroke? (its start is where a stroke ended last
+  // frame — mouse path and each idle pen all match on exact coordinates)
+  const prev = prevStrokeEnds.find((p) => p[0] === x1 && p[1] === y1);
+  const continuing = !!prev;
+
+  // a continuing segment anchors to where the previous one actually ended
+  // IN THE BUFFER (carried in prev[3..4]): re-unprojecting the old screen
+  // point through the new rotation lands where the ink isn't anymore, which
+  // tore visible gaps into strokes whenever the canvas was spinning
+  const p1 = continuing ? { x: prev[3], y: prev[4] } : toBufferSpace(x1, y1);
   const p2 = toBufferSpace(x2, y2);
   const cx = bufferSize / 2, cy = bufferSize / 2;
   const dx = p2.x - cx, dy = p2.y - cy;
@@ -614,8 +623,6 @@ function drawMandalaStroke(x1, y1, x2, y2){
   // stamped styles drop their shape at even distances along the path (the
   // leftover distance carries across frames), so each stamp reads as its
   // own star/ring/petal instead of smearing into a continuous glow line
-  const prev = prevStrokeEnds.find((p) => p[0] === x1 && p[1] === y1);
-  const continuing = !!prev;
   const spacing = stampSpacing(sw);
   const targets = []; // centre-relative endpoints to draw this frame
   if (spacing > 0){
@@ -628,10 +635,10 @@ function drawMandalaStroke(x1, y1, x2, y2){
       targets.push([pdx + (dx - pdx) * t, pdy + (dy - pdy) * t]);
       pos += spacing;
     }
-    curStrokeEnds.push([x2, y2, segLen - (pos - spacing)]);
+    curStrokeEnds.push([x2, y2, segLen - (pos - spacing), p2.x, p2.y]);
   } else {
     targets.push([dx, dy]);
-    curStrokeEnds.push([x2, y2, 0]);
+    curStrokeEnds.push([x2, y2, 0, p2.x, p2.y]);
   }
 
   artLayer.push();
