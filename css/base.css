@@ -35,6 +35,11 @@ input[type="number"]::-webkit-outer-spin-button{ -webkit-appearance:none; margin
   outline:1px solid var(--gold); outline-offset:2px;
 }
 
+/* zen mode (press H): every widget and control fades away — just the canvas.
+   pointer-events off so the hidden UI can't swallow drawing strokes */
+.ui{ transition: opacity 0.35s ease; }
+body.zen .ui{ opacity:0 !important; pointer-events:none !important; }
+
 @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
 
 @media (prefers-reduced-motion: reduce){

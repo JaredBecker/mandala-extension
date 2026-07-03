@@ -42,13 +42,30 @@
   const ambientRefreshers = [];
   const syncAmbientUI = () => ambientRefreshers.forEach((f) => f());
 
-  [['ambSymmetry', 'symmetry'], ['ambBrush', 'brush'],
+  [['ambSymmetry', 'symmetry'], ['ambSymMode', 'symmetryMode'], ['ambBrush', 'brush'],
    ['ambPulse', 'pulseBrush'], ['ambColours', 'colours'], ['ambGlow', 'glow'],
    ['ambAlpha', 'strokeAlpha'], ['ambRotation', 'rotation'], ['ambReact', 'reactToSpeed'],
    ['ambSparkle', 'sparkleDust'], ['ambTrails', 'trails']].forEach(([id, key]) => {
     const el = $id(id);
     ambientRefreshers.push(() => { el.checked = ambient.randomize[key]; });
     el.addEventListener('change', () => { ambient.randomize[key] = el.checked; pushAmbient(); });
+  });
+
+  // gallery mode: ambient builds a piece, dissolves it, and starts a new one
+  const galleryCb = $id('ambGallery');
+  const gallerySec = $id('ambGallerySec');
+  const syncGallery = () => {
+    galleryCb.checked = !!ambient.gallery;
+    gallerySec.value = ambient.gallerySeconds || 45;
+    $id('ambGallerySecVal').textContent = (ambient.gallerySeconds || 45) + 's';
+    $id('galleryGroup').style.display = ambient.gallery ? 'block' : 'none';
+  };
+  ambientRefreshers.push(syncGallery);
+  galleryCb.addEventListener('change', () => { ambient.gallery = galleryCb.checked; syncGallery(); pushAmbient(); });
+  gallerySec.addEventListener('input', () => {
+    ambient.gallerySeconds = parseInt(gallerySec.value, 10);
+    $id('ambGallerySecVal').textContent = ambient.gallerySeconds + 's';
+    pushAmbient();
   });
 
   document.querySelectorAll('#tab-ambient [data-style]').forEach((cb) => {
@@ -106,6 +123,111 @@
     Object.assign(ambient, da);
     syncAmbientUI();
     pushAmbient();
+  });
+
+  // ---- user preset slots: save the current look, apply it later ----
+  // full mandala-state snapshots, applied through the same path storage
+  // loads take — the renderers expose getMandalaState for the capture
+  let userPresets = Array.isArray(state.userPresets) ? state.userPresets : [];
+  const presetRows = document.getElementById('userPresetRows');
+  const savePresetBtn = document.getElementById('savePresetBtn');
+  const savePresetForm = document.getElementById('savePresetForm');
+  const presetNameInput = document.getElementById('presetNameInput');
+
+  const applyFullConfig = (cfg) => {
+    // merge over the live state so presets saved before newer settings
+    // existed still apply cleanly
+    const merged = MandalaStorage.deepMerge(window.getMandalaState(), cfg);
+    applyMandalaState(merged);
+    MandalaStorage.patch('mandala', merged);
+  };
+
+  const renderUserPresets = () => {
+    presetRows.textContent = '';
+    userPresets.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'button-row preset-user-row';
+      const btn = document.createElement('button');
+      btn.textContent = p.name;
+      btn.addEventListener('click', () => applyFullConfig(p.config));
+      const del = document.createElement('button');
+      del.className = 'preset-del';
+      del.textContent = '×';
+      del.title = 'Delete this preset';
+      del.addEventListener('click', () => {
+        userPresets.splice(i, 1);
+        MandalaStorage.patch('userPresets', userPresets);
+        renderUserPresets();
+      });
+      row.appendChild(btn);
+      row.appendChild(del);
+      presetRows.appendChild(row);
+    });
+    savePresetBtn.parentElement.style.display = userPresets.length >= 6 ? 'none' : 'flex';
+  };
+  renderUserPresets();
+
+  savePresetBtn.addEventListener('click', () => {
+    savePresetForm.style.display = 'flex';
+    savePresetBtn.parentElement.style.display = 'none';
+    presetNameInput.focus();
+  });
+  savePresetForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = presetNameInput.value.trim() || ('My look ' + (userPresets.length + 1));
+    userPresets.push({ name, config: window.getMandalaState() });
+    MandalaStorage.patch('userPresets', userPresets);
+    presetNameInput.value = '';
+    savePresetForm.style.display = 'none';
+    renderUserPresets();
+  });
+
+  // ---- Today's mandala: a date-seeded look, identical for everyone ----
+  document.getElementById('presetDaily').addEventListener('click', () => {
+    const d = new Date();
+    let seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    // mulberry32 — tiny deterministic PRNG, so the same date always rolls
+    // the same look on every machine
+    const rnd = () => {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+    applyFullConfig({
+      symmetry: 6 + Math.floor(rnd() * 21),
+      mirror: true,
+      symmetryMode: pick(['radial', 'radial', 'kaleido', 'spiral']),
+      strokeStyleMode: pick(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed']),
+      colourMode: pick(['rainbow', 'gradient']),
+      palette: pick(['full', 'sunset', 'ocean', 'forest', 'mono']),
+      brushSize: 2 + Math.floor(rnd() * 9),
+      glowIntensity: Math.floor(rnd() * 22),
+      strokeAlpha: 60 + Math.floor(rnd() * 41),
+      rainbowSpeed: Math.round((0.3 + rnd() * 1.2) * 10) / 10,
+      pulseBrush: rnd() > 0.6,
+      sparkleDust: rnd() > 0.75,
+      reactToSpeed: false,
+      autoRotate: rnd() > 0.4,
+      rotateSpeed: Math.round((0.05 + rnd() * 0.2) * 100) / 100,
+      trailMode: pick(['fade', 'fade', 'permanent', 'cycle']),
+      fadeSpeed: 3 + Math.floor(rnd() * 10)
+    });
+  });
+
+  // ---- keyboard shortcuts ----
+  // H = zen mode (hide all UI), S = save PNG, C = clear, R = surprise me.
+  // Routed through the existing buttons so both renderers just work.
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'h') document.body.classList.toggle('zen');
+    else if (k === 's') document.getElementById('saveBtn').click();
+    else if (k === 'c') document.getElementById('clearBtn').click();
+    else if (k === 'r') document.getElementById('randomBtn').click();
   });
 
   document.getElementById('panel').classList.toggle('collapsed', state.panelCollapsed);

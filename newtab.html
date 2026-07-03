@@ -113,6 +113,12 @@
       <li>Move your cursor across the canvas &mdash; it draws.</li>
       <li>Leave it still for a second and the mandala draws itself, restyling as it goes.</li>
       <li>Everything below changes the art live.</li>
+      <li>Press <b>H</b> to hide everything but the canvas. <b>S</b> saves a PNG, <b>C</b> clears, <b>R</b> rolls a random look.</li>
+      <li><b>Symmetry style</b> changes the whole geometry &mdash; try Kaleidoscope, Spiral shells, or Tiled grid.</li>
+      <li>Pick the <b>Custom</b> palette to blend strokes through your own colors &mdash; or let <b>Time of day</b> / <b>Match my weather</b> choose for you.</li>
+      <li>&#10024; <b>Today's mandala</b> is seeded by the date &mdash; same for everyone, new every day.</li>
+      <li><b>Save current look</b> keeps your favourite settings as your own preset.</li>
+      <li>In Ambient, <b>Gallery mode</b> builds a piece, fades it out, and begins a new one.</li>
       <li class="howto-webgl">Hold <b>Shift</b> and drag to tilt the camera in 3D.</li>
       <li class="howto-webgl">Hold <b>Shift</b> and double-click to reset the camera.</li>
       <li>Right-click a quick link to remove it.</li>
@@ -131,10 +137,23 @@
   </div>
 
   <div class="control-group">
+    <label>Symmetry style</label>
+    <select id="symmetryMode">
+      <option value="radial" selected>Radial spokes</option>
+      <option value="kaleido">Kaleidoscope fold</option>
+      <option value="spiral">Spiral shells</option>
+      <option value="grid">Tiled grid</option>
+    </select>
+  </div>
+
+  <div class="control-group">
     <label>Stroke style</label>
     <select id="strokeStyle">
       <option value="line">Flowing line</option>
+      <option value="taper">Calligraphy</option>
       <option value="ribbon">Glowing ribbon</option>
+      <option value="chalk">Ink sketch</option>
+      <option value="dashed">Dashed line</option>
       <option value="dots">Stippled dots</option>
       <option value="sparkle">Sparkle burst</option>
       <option value="rails" selected>Twin rails</option>
@@ -197,7 +216,16 @@
       <option value="ocean">Ocean</option>
       <option value="forest">Forest</option>
       <option value="mono">Gold monochrome</option>
+      <option value="daycycle">Time of day</option>
+      <option value="weather">Match my weather</option>
+      <option value="custom">Custom&hellip;</option>
     </select>
+  </div>
+
+  <div class="control-group" id="customPaletteGroup" style="display:none;">
+    <label>Your colors</label>
+    <div id="customSwatches" class="swatch-row"></div>
+    <p class="hint">Strokes blend smoothly through these, in order.</p>
   </div>
 
   <div class="control-group" id="solidColorGroup" style="display:none;">
@@ -278,6 +306,9 @@
   <p class="section-label">Presets</p>
 
   <div class="button-row">
+    <button id="presetDaily">&#10024; Today's mandala</button>
+  </div>
+  <div class="button-row">
     <button id="presetNeon">Neon Dream</button>
     <button id="presetGold">Golden Bloom</button>
   </div>
@@ -297,6 +328,15 @@
     <button id="presetFirefly">Fireflies</button>
     <button id="presetCandy">Bubblegum</button>
   </div>
+
+  <div id="userPresetRows"></div>
+  <div class="button-row">
+    <button id="savePresetBtn">+ Save current look</button>
+  </div>
+  <form id="savePresetForm" class="button-row" style="display:none;">
+    <input id="presetNameInput" type="text" maxlength="18" placeholder="Name this look" autocomplete="off">
+    <button type="submit">Save</button>
+  </form>
 
   <div class="divider"></div>
 
@@ -336,12 +376,22 @@
     <input type="range" id="idleShuffleSeconds" min="5" max="30" step="1" value="10">
   </div>
 
+  <div class="control-group inline">
+    <label><input type="checkbox" id="ambGallery"> Gallery mode &mdash; build a piece, fade it out, begin anew</label>
+  </div>
+
+  <div class="control-group" id="galleryGroup" style="display:none;">
+    <label>Time to build each piece <span id="ambGallerySecVal">45s</span></label>
+    <input type="range" id="ambGallerySec" min="15" max="180" step="5" value="45">
+  </div>
+
   <div class="divider"></div>
   <p class="section-label">It may randomize</p>
   <p class="hint" style="margin:0 0 12px;">Anything unticked keeps the setting you chose in Customize.</p>
 
   <div class="ambient-grid">
     <label><input type="checkbox" id="ambSymmetry" checked> Symmetry</label>
+    <label><input type="checkbox" id="ambSymMode" checked> Symmetry style</label>
     <label><input type="checkbox" id="ambBrush" checked> Brush size</label>
     <label><input type="checkbox" id="ambPulse" checked> Pulse brush</label>
     <label><input type="checkbox" id="ambColours" checked> Colors</label>
@@ -359,7 +409,10 @@
 
   <div class="ambient-grid">
     <label><input type="checkbox" data-style="line" checked> Flowing line</label>
+    <label><input type="checkbox" data-style="taper" checked> Calligraphy</label>
     <label><input type="checkbox" data-style="ribbon" checked> Glowing ribbon</label>
+    <label><input type="checkbox" data-style="chalk" checked> Ink sketch</label>
+    <label><input type="checkbox" data-style="dashed" checked> Dashed line</label>
     <label><input type="checkbox" data-style="dots" checked> Stippled dots</label>
     <label><input type="checkbox" data-style="sparkle" checked> Sparkle burst</label>
     <label><input type="checkbox" data-style="rails" checked> Twin rails</label>

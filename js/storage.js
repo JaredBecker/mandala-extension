@@ -10,6 +10,11 @@
       // zero default glow and every motion extra off: the factory look is
       // pure crisp twin-rail linework — everything else is opt-in
       fadeSpeed: 4, bgColourHex: '#0a0a0a', palette: 'full', glowIntensity: 0,
+      // how strokes replicate: radial spokes / kaleidoscope fold / shrinking
+      // spiral shells / tiled wallpaper grid
+      symmetryMode: 'radial',
+      // stops for the "Custom" palette — strokes blend through these in order
+      customPalette: ['#ff3e94', '#7b2ff7', '#00e5ff'],
       pulseBrush: false, strokeStyleMode: 'rails', autoRotate: false,
       rotateSpeed: 0.15, sparkleDust: false, idleDraw: true,
       strokeAlpha: 92,        // stroke opacity, p5's 0-100 alpha scale
@@ -35,7 +40,7 @@
     // rolls; `patterns` is the pool of idle path algorithms it may pick
     ambient: {
       randomize: {
-        symmetry: true, brush: true, pulseBrush: true,
+        symmetry: true, symmetryMode: true, brush: true, pulseBrush: true,
         colours: true, glow: true, strokeAlpha: true, rotation: true,
         reactToSpeed: true, sparkleDust: true, trails: true
       },
@@ -43,9 +48,17 @@
       brushMin: 1, brushMax: 12,
       glowMin: 4, glowMax: 24,
       // stroke styles the shuffle may pick; empty = keep the user's style
-      styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals'],
-      patterns: ['rose', 'spiral', 'lissajous', 'drift', 'epicycle', 'lemniscate', 'wave']
+      styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals',
+               'taper', 'chalk', 'dashed'],
+      patterns: ['rose', 'spiral', 'lissajous', 'drift', 'epicycle', 'lemniscate', 'wave'],
+      // gallery mode: ambient builds a piece for gallerySeconds, dissolves
+      // it, restyles, and begins a new one
+      gallery: false,
+      gallerySeconds: 45
     },
+    // user-saved looks: [{ name, config }] where config is a full mandala
+    // settings snapshot (applied through applyMandalaState like presets)
+    userPresets: [],
     // the currently shown quote and when it was rolled; a new random one is
     // picked once the timestamp is 24h old (see quotes.js)
     quote: { index: -1, pickedAt: 0 },

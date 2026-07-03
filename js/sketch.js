@@ -74,9 +74,11 @@ let bufferSize;
 let rotationAngle = 0;
 
 let palette = 'full';
+let customPalette = ['#ff3e94', '#7b2ff7', '#00e5ff'];
 let glowIntensity = 0;
 let pulseBrush = false;
 let strokeStyleMode = 'rails';
+let symmetryMode = 'radial'; // radial | kaleido | spiral | grid
 let autoRotate = false;
 let rotateSpeed = 0.15;
 let sparkleDust = false;
@@ -118,17 +120,24 @@ let idleConfigTimer = null;
 // stored preferences by main.js via applyAmbientState
 let ambient = {
   randomize: {
-    symmetry: true, brush: true, pulseBrush: true,
+    symmetry: true, symmetryMode: true, brush: true, pulseBrush: true,
     colours: true, glow: true, strokeAlpha: true, rotation: true,
     reactToSpeed: true, sparkleDust: true, trails: true
   },
   symmetryMin: 6, symmetryMax: 26,
   brushMin: 1, brushMax: 12,
   glowMin: 4, glowMax: 24,
-  styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals'],
-  patterns: IDLE_PATH_ALGORITHMS.slice()
+  styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed'],
+  patterns: IDLE_PATH_ALGORITHMS.slice(),
+  gallery: false,
+  gallerySeconds: 45
 };
 window.applyAmbientState = (a) => { ambient = a; };
+
+// gallery mode phase state: while ambient, build for gallerySeconds, then
+// dissolve the piece over a couple of seconds, restyle, and start fresh
+let galleryFading = false;
+let galleryPhaseStart = Date.now();
 
 // builds the next ambient look. Starts from the USER's config (captured
 // when ambient mode began — not the previous roll) and only re-rolls what
@@ -140,6 +149,8 @@ function randomCosmeticConfig(){
   const span = (lo, hi) => floor(random(min(lo, hi), max(lo, hi) + 1));
   cfg.mirror = true; // always on — unmirrored ambient art reads as scribble
   if (R.symmetry) cfg.symmetry = span(ambient.symmetryMin, ambient.symmetryMax);
+  // radial weighted heaviest — it's the classic look; the others are accents
+  if (R.symmetryMode) cfg.symmetryMode = random(['radial', 'radial', 'radial', 'kaleido', 'spiral', 'grid']);
   // stroke styles are their own pool (all unticked = keep the user's brush)
   if (ambient.styles && ambient.styles.length) cfg.strokeStyleMode = random(ambient.styles);
   if (R.pulseBrush) cfg.pulseBrush = random() > 0.5;
@@ -168,12 +179,15 @@ function randomCosmeticConfig(){
     // shuffle window instead of just looking like permanent mode
     cfg.cycleBuildSeconds = floor(random(5, 15));
   }
+  // gallery mode owns the piece's lifecycle (build → dissolve → new), so
+  // strokes must accumulate crisply until the dissolve — no competing fade
+  if (ambient.gallery) cfg.trailMode = 'permanent';
   return cfg;
 }
 
 function captureCosmeticConfig(){
   return {
-    symmetry, mirror, strokeStyleMode, pulseBrush, colourMode, palette,
+    symmetry, mirror, symmetryMode, strokeStyleMode, pulseBrush, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
     autoRotate, trailMode, fadeSpeed, cycleBuildSeconds, strokeAlpha, rainbowSpeed
   };
@@ -181,7 +195,7 @@ function captureCosmeticConfig(){
 
 function applyCosmeticConfig(cfg){
   ({
-    symmetry, mirror, strokeStyleMode, pulseBrush, colourMode, palette,
+    symmetry, mirror, symmetryMode, strokeStyleMode, pulseBrush, colourMode, palette,
     solidColourHex, glowIntensity, brushSize, reactToSpeed, sparkleDust, rotateSpeed,
     autoRotate, trailMode, fadeSpeed, cycleBuildSeconds, strokeAlpha, rainbowSpeed
   } = cfg);
@@ -213,7 +227,12 @@ function enterIdleConfigShuffle(){
   idlePrevConfig = captureCosmeticConfig();
   applyCosmeticConfig(randomCosmeticConfig());
   pickIdlePathAlgorithms();
+  galleryFading = false;
+  galleryPhaseStart = Date.now();
   idleConfigTimer = setInterval(() => {
+    // in gallery mode the restyle happens when a piece dissolves (see
+    // draw()), not on this fixed clock
+    if (ambient.gallery) return;
     applyCosmeticConfig(randomCosmeticConfig());
     pickIdlePathAlgorithms();
   }, idleShuffleSeconds * 1000);
@@ -281,6 +300,49 @@ const PALETTE_RANGES = {
   forest: [70, 170],
   mono:   [38, 54]
 };
+
+// hue ranges for the "Match my weather" palette, keyed by the coarse mood
+// weather.js publishes on window.MandalaWeatherMood
+const WEATHER_MOOD_RANGES = {
+  clear: [25, 70],    // golden sunshine
+  cloud: [210, 280],  // slate blues into violet
+  fog:   [175, 215],  // pale teals
+  rain:  [185, 250],  // rain blues
+  snow:  [170, 215],  // icy cyans
+  storm: [255, 330]   // bruised purples
+};
+
+// resolves the active hue range — the two "living" palettes pick theirs
+// from the clock / the weather widget instead of a fixed table entry
+function paletteRange(){
+  if (palette === 'daycycle'){
+    const h = new Date().getHours();
+    if (h >= 5 && h < 9) return [300, 420];   // dawn: pinks warming into gold
+    if (h >= 9 && h < 17) return [0, 360];    // day: the full spectrum
+    if (h >= 17 && h < 21) return [260, 400]; // dusk: purples into ember orange
+    return [180, 280];                        // night: deep blues
+  }
+  if (palette === 'weather'){
+    return WEATHER_MOOD_RANGES[window.MandalaWeatherMood] || PALETTE_RANGES.full;
+  }
+  return PALETTE_RANGES[palette] || PALETTE_RANGES.full;
+}
+
+// blends through the user's custom palette stops, treated as a cycle (last
+// blends back into first) so rainbow mode loops without a hard seam
+function customPaletteHex(t){
+  const stops = (customPalette && customPalette.length >= 2) ? customPalette : ['#ff3e94', '#00e5ff'];
+  const n = stops.length;
+  const pos = (((t % 1) + 1) % 1) * n;
+  const i = floor(pos) % n;
+  const f = pos - floor(pos);
+  const a = stops[i], b = stops[(i + 1) % n];
+  const ch = (o) => {
+    const va = parseInt(a.slice(o, o + 2), 16), vb = parseInt(b.slice(o, o + 2), 16);
+    return round(va + (vb - va) * f).toString(16).padStart(2, '0');
+  };
+  return '#' + ch(1) + ch(3) + ch(5);
+}
 
 function computeBufferSize(){
   return Math.ceil(Math.sqrt(windowWidth * windowWidth + windowHeight * windowHeight)) + 4;
@@ -379,8 +441,34 @@ function draw(){
     enterIdleConfigShuffle(); // also initializes fresh idlePens
   }
 
+  // gallery mode: build for gallerySeconds, dissolve over ~2.6s (the pen
+  // rests while the piece fades), then restyle and begin the next piece
+  let galleryHold = false;
+  if (idleActive && ambient.gallery){
+    const heldMs = Date.now() - galleryPhaseStart;
+    if (!galleryFading){
+      if (heldMs > (ambient.gallerySeconds || 45) * 1000){
+        galleryFading = true;
+        galleryPhaseStart = Date.now();
+      }
+    } else {
+      galleryHold = true;
+      artLayer.drawingContext.shadowBlur = 0;
+      artLayer.noStroke();
+      artLayer.fill(hue(bgColourP5), saturation(bgColourP5), brightness(bgColourP5), 14);
+      artLayer.rect(0, 0, bufferSize, bufferSize);
+      if (heldMs > 2600){
+        artLayer.background(bgColourP5); // hard clear: no 8-bit fade residue
+        galleryFading = false;
+        galleryPhaseStart = Date.now();
+        applyCosmeticConfig(randomCosmeticConfig());
+        pickIdlePathAlgorithms();
+      }
+    }
+  }
+
   if (idleActive){
-    stepIdleDrawing();
+    if (!galleryHold) stepIdleDrawing();
   } else if (lastX !== null){
     // lastX stays null until the mousemove listener above has established a
     // real starting point — nothing to draw yet, and nothing should guess one.
@@ -551,8 +639,19 @@ function stepIdleDrawing(){
 }
 
 function paletteHue(t){
-  const range = PALETTE_RANGES[palette] || PALETTE_RANGES.full;
+  const range = paletteRange();
   return (range[0] + t * (range[1] - range[0])) % 360;
+}
+
+// rainbow/gradient stroke colour for a 0..1 position — named palettes map
+// through a hue range at fixed saturation; the custom palette blends the
+// user's actual stops (their saturation/brightness included)
+function strokeColourFromT(t){
+  if (palette === 'custom'){
+    const c = hexToHSB(customPaletteHex(t));
+    return color(hue(c), saturation(c), brightness(c), strokeAlpha);
+  }
+  return color(paletteHue(t), 75, 100, strokeAlpha);
 }
 
 function drawStar(x, y, radius1, radius2, npoints){
@@ -572,9 +671,11 @@ function drawStar(x, y, radius1, radius2, npoints){
 
 function drawMandalaStroke(x1, y1, x2, y2){
   // continuing an existing stroke? (its start is where a stroke ended last
-  // frame — mouse path and each idle pen all match on exact coordinates)
+  // frame — mouse path and each idle pen all match on exact coordinates).
+  // Slot 2 records whether that frame actually laid ink: after a dashed
+  // gap the next dash starts fresh instead of bridging the gap.
   const prev = prevStrokeEnds.find((p) => p[0] === x1 && p[1] === y1);
-  const continuing = !!prev;
+  const continuing = !!prev && prev[2] === 1;
 
   // a continuing segment anchors to where the previous one actually ended
   // IN THE BUFFER (carried in prev[3..4]): re-unprojecting the old screen
@@ -587,22 +688,35 @@ function drawMandalaStroke(x1, y1, x2, y2){
   const pdx = p1.x - cx, pdy = p1.y - cy;
   const speed = dist(x1, y1, x2, y2);
 
+  // dashed style: ink pulses on and off on a frame clock — slow movement
+  // gives fine stitching, fast movement long dashes. Gap frames still
+  // record the pen position (drawn flag 0) so drawing resumes cleanly.
+  if (strokeStyleMode === 'dashed' && floor(frameCount / 4) % 2 === 1){
+    curStrokeEnds.push([x2, y2, 0, p2.x, p2.y]);
+    return;
+  }
+
   let sw = brushSize + (reactToSpeed ? min(speed * 0.6, 22) : 0);
   if (pulseBrush){
     sw += sin(frameCount * 0.12) * (brushSize * 0.5);
     sw = max(sw, 1);
   }
+  if (strokeStyleMode === 'taper'){
+    // calligraphy: pressure ~ dwell — slow strokes press wide, fast flicks
+    // thin to a hairline
+    sw = max(sw * (1.5 - min(speed, 36) * 0.036), 0.6);
+  }
 
   let strokeColour;
   if (colourMode === 'rainbow'){
     const t = ((hueShift + (reactToSpeed ? speed * 4 : 0)) % 360) / 360;
-    strokeColour = color(paletteHue(t), 75, 100, strokeAlpha);
+    strokeColour = strokeColourFromT(t);
     hueShift = (hueShift + rainbowSpeed) % 360;
   } else if (colourMode === 'gradient'){
     const d = dist(dx, dy, 0, 0);
     const maxD = dist(0, 0, cx, cy);
     const t = constrain(d / maxD, 0, 1);
-    strokeColour = color(paletteHue(t), 75, 100, strokeAlpha);
+    strokeColour = strokeColourFromT(t);
   } else {
     const solid = hexToHSB(solidColourHex);
     strokeColour = color(hue(solid), saturation(solid), brightness(solid), strokeAlpha);
@@ -614,20 +728,67 @@ function drawMandalaStroke(x1, y1, x2, y2){
   // stamped styles (sparkle/rings/petals) drop one shape per frame at the
   // cursor, exactly like stippled dots: move slowly and the shapes overlap
   // into a solid line, move fast and they spread out into separate stamps
-  curStrokeEnds.push([x2, y2, 0, p2.x, p2.y]);
+  curStrokeEnds.push([x2, y2, 1, p2.x, p2.y]);
+
+  // kaleidoscope: fold both endpoints into a single wedge before
+  // replicating — strokes visibly "bounce" off the wedge walls, exactly
+  // like the object chamber of a physical kaleidoscope
+  let P1x = pdx, P1y = pdy, P2x = dx, P2y = dy;
+  if (symmetryMode === 'kaleido'){
+    const wedge = TWO_PI / max(symmetry, 1);
+    const fold = (x, y) => {
+      const r = Math.hypot(x, y);
+      let a = ((Math.atan2(y, x) % (2 * wedge)) + 2 * wedge) % (2 * wedge);
+      if (a > wedge) a = 2 * wedge - a;
+      return { x: r * cos(a), y: r * sin(a) };
+    };
+    const f1 = fold(P1x, P1y), f2 = fold(P2x, P2y);
+    P1x = f1.x; P1y = f1.y; P2x = f2.x; P2y = f2.y;
+  }
 
   artLayer.push();
   artLayer.translate(cx, cy);
-  const angleStep = TWO_PI / symmetry;
 
-  for (let i = 0; i < symmetry; i++){
-    artLayer.rotate(angleStep);
-    drawArm(pdx, pdy, dx, dy, sw, strokeColour);
-    if (mirror){
+  if (symmetryMode === 'grid'){
+    // tiled wallpaper: the whole drawing shrinks into each cell, flipped
+    // checkerboard-fashion so adjacent tiles reflect into each other
+    const cells = constrain(round(Math.sqrt(symmetry)), 2, 6);
+    const tile = bufferSize / cells;
+    const s = 1 / cells;
+    for (let gy = 0; gy < cells; gy++){
+      for (let gx = 0; gx < cells; gx++){
+        artLayer.push();
+        artLayer.translate((gx + 0.5) * tile - cx, (gy + 0.5) * tile - cy);
+        artLayer.scale(s * ((gx + gy) % 2 === 1 ? -1 : 1), s);
+        drawArm(P1x, P1y, P2x, P2y, sw, strokeColour);
+        if (mirror){
+          artLayer.push();
+          artLayer.scale(1, -1);
+          drawArm(P1x, P1y, P2x, P2y, sw, strokeColour);
+          artLayer.pop();
+        }
+        artLayer.pop();
+      }
+    }
+  } else {
+    const angleStep = TWO_PI / symmetry;
+    // kaleidoscope needs the reflected copy regardless of the mirror
+    // checkbox — alternating reflection is what closes the wedge pattern
+    const bothSides = mirror || symmetryMode === 'kaleido';
+    for (let i = 0; i < symmetry; i++){
+      artLayer.rotate(angleStep);
+      // spiral shells: each copy also shrinks, reaching ~35% after a full turn
+      const sc = symmetryMode === 'spiral' ? Math.pow(0.35, i / symmetry) : 1;
       artLayer.push();
-      artLayer.scale(1, -1);
-      drawArm(pdx, pdy, dx, dy, sw, strokeColour);
+      if (sc !== 1) artLayer.scale(sc);
+      drawArm(P1x, P1y, P2x, P2y, sw, strokeColour);
       artLayer.pop();
+      if (bothSides){
+        artLayer.push();
+        artLayer.scale(sc, -sc);
+        drawArm(P1x, P1y, P2x, P2y, sw, strokeColour);
+        artLayer.pop();
+      }
     }
   }
   artLayer.pop();
@@ -641,12 +802,29 @@ function drawArm(pdx, pdy, dx, dy, sw, strokeColour){
   // symmetry arm instead of only wherever the raw cursor/idle point is
   maybeSpawnParticles(dx, dy, strokeColour);
 
-  if (strokeStyleMode === 'line'){
+  if (strokeStyleMode === 'line' || strokeStyleMode === 'taper' || strokeStyleMode === 'dashed'){
+    // taper varies sw upstream; dashed gates whole frames upstream — all
+    // three lay down the same plain round-capped segment here
     artLayer.noFill();
     artLayer.stroke(strokeColour);
     artLayer.strokeWeight(sw);
     artLayer.strokeCap(ROUND);
     artLayer.line(pdx, pdy, dx, dy);
+
+  } else if (strokeStyleMode === 'chalk'){
+    // a firm core plus two loose jittered passes — rough ink/charcoal
+    const j = max(sw * 0.6, 2);
+    const h = hue(strokeColour), s = saturation(strokeColour), b = brightness(strokeColour);
+    const a = alpha(strokeColour);
+    artLayer.noFill();
+    artLayer.strokeCap(ROUND);
+    artLayer.stroke(h, s, b, a * 0.6);
+    artLayer.strokeWeight(max(sw * 0.7, 1));
+    artLayer.line(pdx, pdy, dx, dy);
+    artLayer.stroke(h, s, b, a * 0.35);
+    artLayer.strokeWeight(max(sw * 0.3, 0.8));
+    artLayer.line(pdx + random(-j, j), pdy + random(-j, j), dx + random(-j, j), dy + random(-j, j));
+    artLayer.line(pdx + random(-j, j), pdy + random(-j, j), dx + random(-j, j), dy + random(-j, j));
 
   } else if (strokeStyleMode === 'ribbon'){
     artLayer.noFill();
@@ -781,6 +959,8 @@ function applyMandalaState(m){
   reactToSpeed = m.reactToSpeed; $('reactSpeed').checked = reactToSpeed;
   colourMode = m.colourMode; $('colourMode').value = colourMode;
   solidColourHex = m.solidColourHex; $('solidColor').value = solidColourHex;
+  symmetryMode = m.symmetryMode || 'radial'; $('symmetryMode').value = symmetryMode;
+  customPalette = (m.customPalette && m.customPalette.length >= 2) ? m.customPalette.slice() : customPalette;
   trailMode = m.trailMode;
   document.querySelector('input[name="trail"][value="' + trailMode + '"]').checked = true;
   fadeSpeed = m.fadeSpeed; $('fadeSpeed').value = fadeSpeed; $('fadeVal').textContent = fadeSpeed;
@@ -789,6 +969,8 @@ function applyMandalaState(m){
   if (typeof color === 'function') bgColourP5 = hexToHSB(bgColourHex);
   applyThemeFromBg(bgColourHex);
   palette = m.palette; $('palette').value = palette;
+  renderCustomSwatches();
+  syncPaletteUI($);
   glowIntensity = m.glowIntensity; $('glow').value = glowIntensity; $('glowVal').textContent = glowIntensity;
   pulseBrush = m.pulseBrush; $('pulseBrush').checked = pulseBrush;
   strokeStyleMode = m.strokeStyleMode; $('strokeStyle').value = strokeStyleMode;
@@ -822,15 +1004,53 @@ function applyMandalaState(m){
 
 function currentMandalaState(){
   return {
-    symmetry, mirror, brushSize, reactToSpeed, colourMode, solidColourHex,
+    symmetry, mirror, symmetryMode, brushSize, reactToSpeed, colourMode, solidColourHex,
     trailMode, fadeSpeed, cycleBuildSeconds, bgColourHex, palette, glowIntensity, pulseBrush,
+    customPalette: customPalette.slice(),
     strokeStyleMode, autoRotate, rotateSpeed, sparkleDust, idleDraw,
     doubleIdlePattern, strokeAlpha, rainbowSpeed, idlePace, idleShuffleSeconds
   };
 }
 
+// user preset slots and "Today's mandala" (main.js) snapshot/apply through
+// the same full-state path the storage load uses
+window.getMandalaState = currentMandalaState;
+
 function saveMandalaState(){
   MandalaStorage.patch('mandala', currentMandalaState());
+}
+
+// the custom-palette editor only makes sense while a hue-driven colour mode
+// is active AND the custom palette is the one selected
+function syncPaletteUI($){
+  $('customPaletteGroup').style.display =
+    (palette === 'custom' && colourMode !== 'solid') ? 'block' : 'none';
+}
+
+// rebuilds the swatch editor: one colour well per stop, plus +/− steppers
+// (2 to 5 stops)
+function renderCustomSwatches(){
+  const wrap = document.getElementById('customSwatches');
+  wrap.textContent = '';
+  customPalette.forEach((hex, i) => {
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.value = hex;
+    input.addEventListener('input', () => { customPalette[i] = input.value; saveMandalaState(); });
+    wrap.appendChild(input);
+  });
+  if (customPalette.length > 2){
+    const del = document.createElement('button');
+    del.type = 'button'; del.textContent = '−'; del.title = 'Remove the last color';
+    del.addEventListener('click', () => { customPalette.pop(); renderCustomSwatches(); saveMandalaState(); });
+    wrap.appendChild(del);
+  }
+  if (customPalette.length < 5){
+    const add = document.createElement('button');
+    add.type = 'button'; add.textContent = '+'; add.title = 'Add a color';
+    add.addEventListener('click', () => { customPalette.push('#f2c14e'); renderCustomSwatches(); saveMandalaState(); });
+    wrap.appendChild(add);
+  }
 }
 
 // called by breathing.js to temporarily drive the rotation, and to hand it back
@@ -873,14 +1093,16 @@ function applyPreset(name){
 
   if (p.symmetry !== undefined){ symmetry = p.symmetry; $('symmetry').value = symmetry; $('symmetryVal').textContent = symmetry; }
   if (p.mirror !== undefined){ mirror = p.mirror; $('mirror').checked = mirror; }
+  if (p.symmetryMode !== undefined){ symmetryMode = p.symmetryMode; $('symmetryMode').value = symmetryMode; }
   if (p.strokeStyleMode !== undefined){ strokeStyleMode = p.strokeStyleMode; $('strokeStyle').value = strokeStyleMode; }
   if (p.colourMode !== undefined){
     colourMode = p.colourMode; $('colourMode').value = colourMode;
     $('solidColorGroup').style.display = colourMode === 'solid' ? 'block' : 'none';
     $('paletteGroup').style.display = colourMode === 'solid' ? 'none' : 'block';
     $('rainbowSpeedGroup').style.display = colourMode === 'rainbow' ? 'block' : 'none';
+    syncPaletteUI($);
   }
-  if (p.palette !== undefined){ palette = p.palette; $('palette').value = palette; }
+  if (p.palette !== undefined){ palette = p.palette; $('palette').value = palette; syncPaletteUI($); }
   if (p.solidColourHex !== undefined){ solidColourHex = p.solidColourHex; $('solidColor').value = solidColourHex; }
   if (p.glowIntensity !== undefined){ glowIntensity = p.glowIntensity; $('glow').value = glowIntensity; $('glowVal').textContent = glowIntensity; }
   if (p.trailMode !== undefined){
@@ -953,6 +1175,8 @@ function wireUpPanel(){
 
   $('mirror').addEventListener('change', (e) => { mirror = e.target.checked; saveMandalaState(); });
 
+  $('symmetryMode').addEventListener('change', (e) => { symmetryMode = e.target.value; saveMandalaState(); });
+
   $('strokeStyle').addEventListener('change', (e) => { strokeStyleMode = e.target.value; saveMandalaState(); });
 
   $('brush').addEventListener('input', (e) => {
@@ -985,10 +1209,11 @@ function wireUpPanel(){
     $('solidColorGroup').style.display = colourMode === 'solid' ? 'block' : 'none';
     $('paletteGroup').style.display = colourMode === 'solid' ? 'none' : 'block';
     $('rainbowSpeedGroup').style.display = colourMode === 'rainbow' ? 'block' : 'none';
+    syncPaletteUI($);
     saveMandalaState();
   });
 
-  $('palette').addEventListener('change', (e) => { palette = e.target.value; saveMandalaState(); });
+  $('palette').addEventListener('change', (e) => { palette = e.target.value; syncPaletteUI($); saveMandalaState(); });
   $('solidColor').addEventListener('input', (e) => { solidColourHex = e.target.value; saveMandalaState(); });
 
   $('glow').addEventListener('input', (e) => {
@@ -1075,7 +1300,10 @@ function randomizeSettings($){
   mirror = random() > 0.35;
   $('mirror').checked = mirror;
 
-  strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals']);
+  symmetryMode = random(['radial', 'radial', 'kaleido', 'spiral', 'grid']);
+  $('symmetryMode').value = symmetryMode;
+
+  strokeStyleMode = random(['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed']);
   $('strokeStyle').value = strokeStyleMode;
 
   pulseBrush = random() > 0.5;

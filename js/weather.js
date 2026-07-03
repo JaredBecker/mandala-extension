@@ -15,6 +15,17 @@
 
   function iconFor(code){ return WMO_ICON[code] || '🌡️'; }
 
+  // coarse mood bucket for the mandala's "Match my weather" palette —
+  // published on window so the renderers can read it without a dependency
+  function moodFor(code){
+    if (code === 45 || code === 48) return 'fog';
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
+    if (code >= 95) return 'storm';
+    if (code === 2 || code === 3) return 'cloud';
+    return 'clear';
+  }
+
   async function geocode(query){
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`;
     const res = await fetch(url);
@@ -75,6 +86,7 @@
     });
 
     fetchCurrent(active.lat, active.lon).then((cw) => {
+      window.MandalaWeatherMood = moodFor(cw.weathercode);
       const iconEl = document.getElementById('weatherIcon');
       const tempEl = document.getElementById('weatherTemp');
       if (!iconEl || !tempEl) return;

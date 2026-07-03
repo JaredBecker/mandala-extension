@@ -160,6 +160,30 @@ button.danger:hover{ background:rgba(255,62,148,0.25); }
 
 .hint{ font-size:11px; color:var(--ink-dim); line-height:1.5; margin:8px 0 0; }
 
+/* custom-palette swatch editor: colour wells plus small +/− steppers */
+.swatch-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.swatch-row input[type="color"]{
+  width:36px; height:30px; padding:2px; border-radius:8px;
+  border:1px solid rgba(242,193,78,0.3); background:var(--select-bg);
+}
+.swatch-row button{
+  flex:0 0 auto; width:30px; height:30px; padding:0;
+  font-size:15px; line-height:1; border-radius:8px;
+}
+
+/* user-saved presets: a wide apply button with a slim delete beside it */
+.preset-user-row .preset-del{
+  flex:0 0 auto; width:30px; color:var(--ink-dim);
+  border-color:rgba(255,62,148,0.35); background:rgba(255,62,148,0.06);
+}
+.preset-user-row .preset-del:hover{ background:rgba(255,62,148,0.22); color:#ffd7e8; }
+#savePresetForm input{
+  flex:1; min-width:0; padding:8px 10px; border-radius:8px;
+  border:1px solid rgba(242,193,78,0.3); background:var(--select-bg);
+  color:var(--ink); font-family:'Inter',sans-serif; font-size:12px;
+}
+#savePresetForm button{ flex:0 0 auto; width:64px; }
+
 /* "How it works" explainer at the top of the Customize tab */
 .howto-btn{
   width:100%; margin-bottom:12px; font-size:10.5px; letter-spacing:0.04em;
