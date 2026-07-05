@@ -448,7 +448,13 @@ function draw(){
     // already nearly-faded", not "override the requested fade time".
     const correctionCycle = max(20, round(300 / fadeSpeed));
     const correctionPhase = (frameCount % correctionCycle) / correctionCycle;
-    const correctionBoost = pow(max(0, sin(PI * correctionPhase)), 8);
+    let correctionBoost = pow(max(0, sin(PI * correctionPhase)), 8);
+    // the breath can't tell residue from fresh ink — while the user is
+    // actively drawing it would eat their strokes as fast as they're laid
+    // (paint… vanish… paint again, on the cycle above). Hold it off until
+    // the hand has rested a moment; the residue it exists to clean builds
+    // over minutes, so correcting between strokes is plenty.
+    if (Date.now() - lastRealInput < 2000) correctionBoost = 0;
     const fadeAlpha = fadeSpeed + correctionBoost * (60 - fadeSpeed);
     artLayer.fill(hue(bgColourP5), saturation(bgColourP5), brightness(bgColourP5), fadeAlpha);
     artLayer.rect(0, 0, bufferSize, bufferSize);

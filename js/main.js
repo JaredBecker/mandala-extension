@@ -234,7 +234,12 @@
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    // swallow keys only where typing (or letter-jumping, for selects) means
+    // something — clicking a checkbox/slider/color well leaves it focused,
+    // and shortcuts should still work right after adjusting one
+    const TYPING_INPUTS = ['text', 'number', 'search', 'email', 'password', 'url', 'tel'];
+    if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable ||
+        (t.tagName === 'INPUT' && TYPING_INPUTS.includes(t.type)))) return;
     const k = e.key.toLowerCase();
     if (k === 'h') document.body.classList.toggle('zen');
     else if (k === 's') document.getElementById('saveBtn').click();
