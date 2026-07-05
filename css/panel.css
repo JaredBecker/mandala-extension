@@ -184,6 +184,15 @@ button.danger:hover{ background:rgba(255,62,148,0.25); }
 }
 #savePresetForm button{ flex:0 0 auto; width:64px; }
 
+/* share: paste-a-look import boxes (Customize + Ambient tabs) */
+.import-form textarea{
+  width:100%; margin-bottom:8px; padding:8px 10px; border-radius:8px;
+  border:1px solid rgba(242,193,78,0.3); background:var(--select-bg);
+  color:var(--ink); font-family:Consolas, monospace; font-size:10.5px;
+  line-height:1.45; resize:vertical; min-height:64px;
+}
+.import-form textarea:focus{ outline:1px solid var(--gold); }
+
 /* "How it works" explainer at the top of the Customize tab */
 .howto-btn{
   width:100%; margin-bottom:12px; font-size:10.5px; letter-spacing:0.04em;

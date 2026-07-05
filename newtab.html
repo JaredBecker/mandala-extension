@@ -119,6 +119,7 @@
       <li><b>Silk wisps</b> paints smoke that keeps drifting after your stroke &mdash; loveliest with the <b>Permanent</b> or <b>Cycle</b> trail.</li>
       <li>&#10024; <b>Today's mandala</b> is seeded by the date &mdash; same for everyone, new every day.</li>
       <li><b>Save current look</b> keeps your favourite settings as your own preset.</li>
+      <li><b>Copy my look</b> turns your settings into text you can send to a friend &mdash; they hit <b>Paste a look</b> and draw with it. Ambient settings share the same way from their tab.</li>
       <li>In Ambient, <b>Gallery mode</b> builds a piece, fades it out, and begins a new one.</li>
       <li class="howto-webgl">Hold <b>Shift</b> and drag to tilt the camera in 3D.</li>
       <li class="howto-webgl">Hold <b>Shift</b> and double-click to reset the camera.</li>
@@ -341,6 +342,19 @@
   </form>
 
   <div class="divider"></div>
+  <p class="section-label">Share</p>
+
+  <div class="button-row">
+    <button id="exportLookBtn" data-tip="Copy your whole current look as text &mdash; send it to anyone">Copy my look</button>
+    <button id="importLookBtn" data-tip="Paste a look someone shared with you">Paste a look</button>
+  </div>
+  <form id="importLookForm" class="import-form" style="display:none;">
+    <textarea id="importLookText" rows="4" spellcheck="false" placeholder="Paste a shared look here&hellip;"></textarea>
+    <div class="button-row"><button type="submit">Apply look</button></div>
+    <p class="hint" id="importLookMsg"></p>
+  </form>
+
+  <div class="divider"></div>
 
   <div class="button-row">
     <button id="clearBtn" data-tip="Wipe the canvas clean &mdash; or press C">Clear canvas</button>
@@ -466,6 +480,19 @@
     <label data-tip="Endless figure-eights"><input type="checkbox" data-pattern="lemniscate" checked> Figure-eight</label>
     <label data-tip="Rippling waves around the ring"><input type="checkbox" data-pattern="wave" checked> Waves</label>
   </div>
+
+  <div class="divider"></div>
+  <p class="section-label">Share</p>
+
+  <div class="button-row">
+    <button id="exportAmbientBtn" data-tip="Copy every setting on this tab as text &mdash; send it to anyone">Copy ambient settings</button>
+    <button id="importAmbientBtn" data-tip="Paste ambient settings someone shared with you">Paste settings</button>
+  </div>
+  <form id="importAmbientForm" class="import-form" style="display:none;">
+    <textarea id="importAmbientText" rows="4" spellcheck="false" placeholder="Paste shared ambient settings here&hellip;"></textarea>
+    <div class="button-row"><button type="submit">Apply settings</button></div>
+    <p class="hint" id="importAmbientMsg"></p>
+  </form>
 
   </div>
 

@@ -228,6 +228,90 @@
     });
   });
 
+  // ---- share: export/import the current look and the ambient settings ----
+  // exports are small tagged-JSON blobs meant to be pasted to a friend; the
+  // tag stops a look landing in the ambient importer and vice versa. Import
+  // filters to known keys so shared junk can't accumulate in storage.
+  const wireShare = (ids, kind, kindLabel, otherTabLabel, getConfig, applyConfig) => {
+    const exportBtn = $id(ids.exp), importBtn = $id(ids.imp);
+    const form = $id(ids.form), text = $id(ids.text), msg = $id(ids.msg);
+
+    exportBtn.addEventListener('click', async () => {
+      const payload = JSON.stringify({ kind, version: 1, config: getConfig() });
+      try {
+        await navigator.clipboard.writeText(payload);
+        const orig = exportBtn.textContent;
+        exportBtn.textContent = 'Copied!';
+        setTimeout(() => { exportBtn.textContent = orig; }, 1400);
+      } catch (e) {
+        // clipboard can be unavailable — show the JSON for manual copying
+        form.style.display = 'block';
+        text.value = payload;
+        text.select();
+        msg.textContent = 'Clipboard unavailable — copy the text above by hand.';
+      }
+    });
+
+    importBtn.addEventListener('click', () => {
+      const open = form.style.display !== 'none';
+      form.style.display = open ? 'none' : 'block';
+      msg.textContent = '';
+      if (!open){ text.value = ''; text.focus(); }
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      let parsed;
+      try {
+        parsed = JSON.parse(text.value.trim());
+      } catch (err) {
+        msg.textContent = "That doesn't look like a valid share — copy the whole text and try again.";
+        return;
+      }
+      if (parsed && parsed.kind && parsed.kind !== kind){
+        msg.textContent = `That's ${otherTabLabel} — paste it there instead.`;
+        return;
+      }
+      const config = parsed && parsed.kind ? parsed.config : parsed;
+      if (!config || typeof config !== 'object' || Array.isArray(config)){
+        msg.textContent = "That doesn't look like " + kindLabel + '.';
+        return;
+      }
+      applyConfig(config);
+      msg.textContent = 'Applied ✓';
+      text.value = '';
+      setTimeout(() => { form.style.display = 'none'; msg.textContent = ''; }, 1200);
+    });
+  };
+
+  // only keys the app actually knows survive an import
+  const pickKnown = (defaults, cfg) => {
+    const clean = {};
+    Object.keys(defaults).forEach((k) => { if (cfg[k] !== undefined) clean[k] = cfg[k]; });
+    return clean;
+  };
+
+  wireShare(
+    { exp: 'exportLookBtn', imp: 'importLookBtn', form: 'importLookForm', text: 'importLookText', msg: 'importLookMsg' },
+    'mandala-look', 'a mandala look', 'an Ambient-settings share (Ambient tab)',
+    () => window.getMandalaState(),
+    (cfg) => applyFullConfig(pickKnown(MandalaStorage.DEFAULT_STATE.mandala, cfg))
+  );
+
+  wireShare(
+    { exp: 'exportAmbientBtn', imp: 'importAmbientBtn', form: 'importAmbientForm', text: 'importAmbientText', msg: 'importAmbientMsg' },
+    'mandala-ambient', 'ambient settings', 'a look share (Customize tab)',
+    () => JSON.parse(JSON.stringify(ambient)),
+    (cfg) => {
+      const defaults = JSON.parse(JSON.stringify(MandalaStorage.DEFAULT_STATE.ambient));
+      const merged = MandalaStorage.deepMerge(defaults, pickKnown(defaults, cfg));
+      Object.keys(ambient).forEach((k) => { delete ambient[k]; });
+      Object.assign(ambient, merged);
+      syncAmbientUI();
+      pushAmbient();
+    }
+  );
+
   // ---- keyboard shortcuts ----
   // H = zen mode (hide all UI), S = save PNG, C = clear, R = surprise me.
   // Routed through the existing buttons so both renderers just work.
