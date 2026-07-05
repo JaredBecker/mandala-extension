@@ -393,7 +393,6 @@
 
   <div class="ambient-grid">
     <label data-tip="May change how many times strokes repeat"><input type="checkbox" id="ambSymmetry" checked> Symmetry</label>
-    <label data-tip="May switch between spokes, kaleidoscope, spirals, and grid"><input type="checkbox" id="ambSymMode" checked> Symmetry style</label>
     <label data-tip="May change the brush thickness"><input type="checkbox" id="ambBrush" checked> Brush size</label>
     <label data-tip="May turn brush pulsing on or off"><input type="checkbox" id="ambPulse" checked> Pulse brush</label>
     <label data-tip="May pick new color modes and palettes"><input type="checkbox" id="ambColours" checked> Colors</label>
@@ -403,6 +402,17 @@
     <label data-tip="May toggle speed-reactive brush width"><input type="checkbox" id="ambReact" checked> Speed react</label>
     <label data-tip="May toggle cursor sparkle dust"><input type="checkbox" id="ambSparkle" checked> Sparkle dust</label>
     <label data-tip="May switch trail modes and fade speeds"><input type="checkbox" id="ambTrails" checked> Trails &amp; fade</label>
+  </div>
+
+  <div class="divider"></div>
+  <p class="section-label">Symmetry styles</p>
+  <p class="hint" style="margin:0 0 12px;">Which geometries ambient mode may use. Untick all to keep yours.</p>
+
+  <div class="ambient-grid">
+    <label data-tip="Classic spokes around the center"><input type="checkbox" data-symmode="radial" checked> Radial spokes</label>
+    <label data-tip="Folded wedges that bounce strokes like a real kaleidoscope"><input type="checkbox" data-symmode="kaleido" checked> Kaleidoscope</label>
+    <label data-tip="Each copy shrinks into a spiral of shells"><input type="checkbox" data-symmode="spiral" checked> Spiral shells</label>
+    <label data-tip="The whole drawing tiles into a flipped checkerboard"><input type="checkbox" data-symmode="grid" checked> Tiled grid</label>
   </div>
 
   <div class="divider"></div>

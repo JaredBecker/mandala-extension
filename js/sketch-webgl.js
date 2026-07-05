@@ -312,13 +312,14 @@ let idleConfigTimer = null;
 // stored preferences by main.js via applyAmbientState
 let ambient = {
   randomize: {
-    symmetry: true, symmetryMode: true, brush: true, pulseBrush: true,
+    symmetry: true, brush: true, pulseBrush: true,
     colours: true, glow: true, strokeAlpha: true, rotation: true,
     reactToSpeed: true, sparkleDust: true, trails: true
   },
   symmetryMin: 6, symmetryMax: 26,
   brushMin: 1, brushMax: 12,
   glowMin: 4, glowMax: 24,
+  symModes: ['radial', 'kaleido', 'spiral', 'grid'],
   styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals', 'taper', 'chalk', 'dashed', 'silk'],
   patterns: IDLE_PATH_ALGORITHMS.slice(),
   gallery: false,
@@ -341,8 +342,14 @@ function randomCosmeticConfig(){
   const span = (lo, hi) => floor(random(min(lo, hi), max(lo, hi) + 1));
   cfg.mirror = true;
   if (R.symmetry) cfg.symmetry = span(ambient.symmetryMin, ambient.symmetryMax);
-  // radial weighted heaviest — it's the classic look; the others are accents
-  if (R.symmetryMode) cfg.symmetryMode = random(['radial', 'radial', 'radial', 'kaleido', 'spiral', 'grid']);
+  // symmetry styles are a user-picked pool (all unticked = keep the user's
+  // geometry); radial stays weighted heaviest when allowed — it's the
+  // classic look, the others are accents
+  if (ambient.symModes && ambient.symModes.length){
+    const pool = ambient.symModes.slice();
+    if (pool.includes('radial')) pool.push('radial', 'radial');
+    cfg.symmetryMode = random(pool);
+  }
   // stroke styles are their own pool (all unticked = keep the user's brush)
   if (ambient.styles && ambient.styles.length) cfg.strokeStyleMode = random(ambient.styles);
   if (R.pulseBrush) cfg.pulseBrush = random() > 0.5;

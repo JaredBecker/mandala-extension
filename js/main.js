@@ -42,7 +42,7 @@
   const ambientRefreshers = [];
   const syncAmbientUI = () => ambientRefreshers.forEach((f) => f());
 
-  [['ambSymmetry', 'symmetry'], ['ambSymMode', 'symmetryMode'], ['ambBrush', 'brush'],
+  [['ambSymmetry', 'symmetry'], ['ambBrush', 'brush'],
    ['ambPulse', 'pulseBrush'], ['ambColours', 'colours'], ['ambGlow', 'glow'],
    ['ambAlpha', 'strokeAlpha'], ['ambRotation', 'rotation'], ['ambReact', 'reactToSpeed'],
    ['ambSparkle', 'sparkleDust'], ['ambTrails', 'trails']].forEach(([id, key]) => {
@@ -73,6 +73,17 @@
     cb.addEventListener('change', () => {
       ambient.styles = [...document.querySelectorAll('#tab-ambient [data-style]:checked')]
         .map((c) => c.dataset.style);
+      pushAmbient();
+    });
+  });
+
+  // symmetry geometries the shuffle may pick — same pool semantics as the
+  // stroke styles above (untick all = keep the user's own geometry)
+  document.querySelectorAll('#tab-ambient [data-symmode]').forEach((cb) => {
+    ambientRefreshers.push(() => { cb.checked = (ambient.symModes || []).includes(cb.dataset.symmode); });
+    cb.addEventListener('change', () => {
+      ambient.symModes = [...document.querySelectorAll('#tab-ambient [data-symmode]:checked')]
+        .map((c) => c.dataset.symmode);
       pushAmbient();
     });
   });

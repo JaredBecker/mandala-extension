@@ -40,13 +40,15 @@
     // rolls; `patterns` is the pool of idle path algorithms it may pick
     ambient: {
       randomize: {
-        symmetry: true, symmetryMode: true, brush: true, pulseBrush: true,
+        symmetry: true, brush: true, pulseBrush: true,
         colours: true, glow: true, strokeAlpha: true, rotation: true,
         reactToSpeed: true, sparkleDust: true, trails: true
       },
       symmetryMin: 6, symmetryMax: 26,
       brushMin: 1, brushMax: 12,
       glowMin: 4, glowMax: 24,
+      // symmetry geometries the shuffle may pick; empty = keep the user's
+      symModes: ['radial', 'kaleido', 'spiral', 'grid'],
       // stroke styles the shuffle may pick; empty = keep the user's style
       styles: ['line', 'ribbon', 'dots', 'sparkle', 'rails', 'rings', 'petals',
                'taper', 'chalk', 'dashed', 'silk'],
