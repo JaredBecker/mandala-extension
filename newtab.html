@@ -107,25 +107,7 @@
 
   <div class="tab-content" id="tab-customize">
 
-  <button id="howtoBtn" class="howto-btn" data-tip="A quick tour of everything on this panel">&#10067; How it works</button>
-  <div id="howtoBox">
-    <ul>
-      <li>Move your cursor across the canvas &mdash; it draws.</li>
-      <li>Leave it still for a second and the mandala draws itself, restyling as it goes.</li>
-      <li>Everything below changes the art live.</li>
-      <li>Press <b>H</b> to hide everything but the canvas. <b>S</b> saves a PNG, <b>C</b> clears, <b>R</b> rolls a random look.</li>
-      <li><b>Symmetry style</b> changes the whole geometry &mdash; try Kaleidoscope, Spiral shells, or Tiled grid.</li>
-      <li>Pick the <b>Custom</b> palette to blend strokes through your own colors &mdash; or let <b>Time of day</b> / <b>Match my weather</b> choose for you.</li>
-      <li><b>Silk wisps</b> paints smoke that keeps drifting after your stroke &mdash; loveliest with the <b>Permanent</b> or <b>Cycle</b> trail.</li>
-      <li>&#10024; <b>Today's mandala</b> is seeded by the date &mdash; same for everyone, new every day.</li>
-      <li><b>Save current look</b> keeps your favourite settings as your own preset.</li>
-      <li><b>Copy my look</b> turns your settings into text you can send to a friend &mdash; they hit <b>Paste a look</b> and draw with it. Ambient settings share the same way from their tab.</li>
-      <li>In Ambient, <b>Gallery mode</b> builds a piece, fades it out, and begins a new one.</li>
-      <li class="howto-webgl">Hold <b>Shift</b> and drag to tilt the camera in 3D.</li>
-      <li class="howto-webgl">Hold <b>Shift</b> and double-click to reset the camera.</li>
-      <li>Right-click a quick link to remove it.</li>
-    </ul>
-  </div>
+  <button id="howtoBtn" class="howto-btn" data-tip="The full guide, in a proper window">&#10067; How it works</button>
 
   <p class="section-label">Shape</p>
 
@@ -371,6 +353,8 @@
 
   <div class="tab-content" id="tab-ambient">
 
+  <button id="howtoBtnAmbient" class="howto-btn" data-tip="The full guide, in a proper window">&#10067; How it works</button>
+
   <p class="section-label">Ambient drawing</p>
   <p class="hint" style="margin:0 0 14px;">When you stop moving, the mandala draws itself and re-rolls a random look as it goes. This tab decides what it's allowed to do.</p>
 
@@ -500,6 +484,47 @@
     <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
     Made with &#10084;&#65039; by some guy named Jared
   </a>
+</div>
+
+<div id="howto-overlay" class="ui">
+  <div class="howto-modal">
+    <button id="howtoClose">&times; Close</button>
+    <h1><span>&#10022;</span> How it works</h1>
+    <div id="howtoBox" class="howto-modal-body">
+
+      <h2>Drawing</h2>
+      <ul>
+        <li>Move your cursor across the canvas &mdash; it draws, mirrored into a mandala.</li>
+        <li>Leave the cursor still for a second and the mandala <b>draws itself</b>, restyling as it goes. This only happens while <b>Draw on its own when idle</b> is ticked on the Ambient tab &mdash; untick it and the canvas waits for your hand.</li>
+        <li>Everything on the Customize tab changes the art live.</li>
+      </ul>
+
+      <h2>Customize</h2>
+      <ul>
+        <li><b>Symmetry style</b> changes the whole geometry &mdash; try Kaleidoscope, Spiral shells, or Tiled grid.</li>
+        <li><b>Silk wisps</b> paints smoke that keeps drifting after your stroke &mdash; loveliest with the <b>Permanent</b> or <b>Cycle</b> trail.</li>
+        <li>Pick the <b>Custom</b> palette to blend strokes through your own colors &mdash; or let <b>Time of day</b> / <b>Match my weather</b> choose for you.</li>
+        <li>&#10024; <b>Today's mandala</b> is seeded by the date &mdash; same for everyone, new every day.</li>
+        <li><b>Save current look</b> keeps your favourite settings as your own preset.</li>
+        <li><b>Copy my look</b> turns your settings into text you can send to a friend &mdash; they hit <b>Paste a look</b> and draw with the exact same setup. Ambient settings share the same way from their own tab.</li>
+      </ul>
+
+      <h2>Ambient</h2>
+      <ul>
+        <li>The Ambient tab styles the <b>random generation</b>: what the self-drawing hand is allowed to change, which brushes and geometries it may pick, and how wild the numbers can go. Anything unticked keeps your Customize setting.</li>
+        <li><b>Gallery mode</b> builds a piece, fades it out, restyles, and begins a new one &mdash; an endless exhibition.</li>
+      </ul>
+
+      <h2>Keyboard &amp; camera</h2>
+      <ul>
+        <li>Press <b>H</b> to hide everything but the canvas. <b>S</b> saves a PNG, <b>C</b> clears, <b>R</b> rolls a random look.</li>
+        <li class="howto-webgl">Hold <b>Shift</b> and drag to tilt the camera in 3D.</li>
+        <li class="howto-webgl">Hold <b>Shift</b> and double-click to reset the camera.</li>
+        <li>Right-click a quick link to remove it.</li>
+      </ul>
+
+    </div>
+  </div>
 </div>
 
 <div id="breathing-overlay" class="ui">

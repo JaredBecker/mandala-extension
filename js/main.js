@@ -22,9 +22,16 @@
     rendererHint.textContent = 'Saved — takes effect on your next new tab.';
   });
 
-  document.getElementById('howtoBtn').addEventListener('click', () => {
-    document.getElementById('howtoBox').classList.toggle('open');
-  });
+  // "How it works" opens one shared modal from either tab; click-outside,
+  // the close button, or Escape dismiss it
+  const howtoOverlay = document.getElementById('howto-overlay');
+  const openHowto = () => howtoOverlay.classList.add('open');
+  const closeHowto = () => howtoOverlay.classList.remove('open');
+  document.getElementById('howtoBtn').addEventListener('click', openHowto);
+  document.getElementById('howtoBtnAmbient').addEventListener('click', openHowto);
+  document.getElementById('howtoClose').addEventListener('click', closeHowto);
+  howtoOverlay.addEventListener('click', (e) => { if (e.target === howtoOverlay) closeHowto(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHowto(); });
 
   // ---- Ambient tab: what auto-draw may randomize ----
   // wired here (not in the sketches) because it's renderer-agnostic; the

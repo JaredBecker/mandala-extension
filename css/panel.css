@@ -193,17 +193,54 @@ button.danger:hover{ background:rgba(255,62,148,0.25); }
 }
 .import-form textarea:focus{ outline:1px solid var(--gold); }
 
-/* "How it works" explainer at the top of the Customize tab */
+/* "How it works" button (Customize + Ambient tabs) — opens the modal */
 .howto-btn{
   width:100%; margin-bottom:12px; font-size:10.5px; letter-spacing:0.04em;
   color:var(--ink-dim); background:rgba(95,232,255,0.06); border-color:rgba(95,232,255,0.25);
 }
 .howto-btn:hover{ background:rgba(95,232,255,0.15); color:var(--ink); }
-#howtoBox{ display:none; margin:-4px 0 14px; }
-#howtoBox.open{ display:block; }
-#howtoBox ul{ margin:0; padding-left:16px; }
-#howtoBox li{ font-size:11px; color:var(--ink-dim); line-height:1.55; margin-bottom:5px; }
-#howtoBox b{ color:var(--gold); font-weight:600; }
+
+/* the guide itself: a centred modal, roomier and larger-set than the old
+   in-panel box ever could be */
+#howto-overlay{
+  position:fixed; inset:0; z-index:40;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(5,6,15,0.55);
+  backdrop-filter: blur(6px);
+}
+#howto-overlay.open{ display:flex; }
+.howto-modal{
+  position:relative;
+  width:min(620px, calc(100vw - 40px));
+  max-height:min(78vh, 720px);
+  display:flex; flex-direction:column;
+  background:var(--panel-bg);
+  border:1px solid var(--panel-border);
+  border-radius:16px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+  padding:24px 28px 20px;
+}
+.howto-modal h1{
+  font-family:'Inter',sans-serif; font-weight:700; font-size:20px;
+  letter-spacing:0.04em; margin:0 0 6px; color:var(--ink);
+}
+.howto-modal h1 span{ color:var(--gold); margin-right:8px; }
+.howto-modal-body{ overflow-y:auto; padding-right:8px; }
+.howto-modal-body::-webkit-scrollbar{ width:6px; }
+.howto-modal-body::-webkit-scrollbar-thumb{ background:rgba(242,193,78,0.3); border-radius:3px; }
+.howto-modal h2{
+  font-family:'Inter',sans-serif; font-size:12px; font-weight:700;
+  letter-spacing:0.08em; text-transform:uppercase; color:var(--gold);
+  margin:18px 0 8px;
+}
+.howto-modal ul{ margin:0; padding-left:18px; }
+.howto-modal li{ font-size:13.5px; color:var(--ink); line-height:1.65; margin-bottom:8px; }
+.howto-modal b{ color:var(--gold); font-weight:600; }
+#howtoClose{
+  position:absolute; top:14px; right:14px;
+  flex:none; width:auto; padding:8px 14px; font-size:11px;
+}
 /* camera lines only make sense on the WebGL renderer; it reveals them */
 #howtoBox li.howto-webgl{ display:none; }
 
