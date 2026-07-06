@@ -6,6 +6,8 @@
     activeLocationId: null,
     mandala: {
       symmetry: 12, mirror: true, brushSize: 10, reactToSpeed: false,
+      // when on, the cursor only paints while the primary button is held
+      clickToDraw: false,
       colourMode: 'rainbow', solidColourHex: '#ff3e94', trailMode: 'fade',
       // zero default glow and every motion extra off: the factory look is
       // pure crisp twin-rail linework — everything else is opt-in
@@ -101,12 +103,21 @@
     return state;
   }
 
+  // patch() is a load-then-save of the whole blob, so overlapping calls must
+  // run one at a time — otherwise the last save lands with a stale snapshot
+  // and silently undoes the others (reset-to-defaults fires three at once)
+  let writeQueue = Promise.resolve();
+
   // merges `value` into state[key] (or replaces it if value isn't an object) and persists
-  async function patch(key, value){
-    const state = await load();
-    state[key] = isPlainObject(value) ? deepMerge(state[key], value) : value;
-    await save(state);
-    return state;
+  function patch(key, value){
+    const run = writeQueue.then(async () => {
+      const state = await load();
+      state[key] = isPlainObject(value) ? deepMerge(state[key], value) : value;
+      await save(state);
+      return state;
+    });
+    writeQueue = run.catch(() => {}); // a failed patch must not jam the queue
+    return run;
   }
 
   // DEFAULT_STATE doubles as the factory config for "Reset to defaults"

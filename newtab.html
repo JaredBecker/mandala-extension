@@ -155,6 +155,10 @@
     <input type="range" id="brush" min="1" max="20" value="10">
   </div>
 
+  <div class="control-group inline" data-tip="Draw only while holding the left mouse button &mdash; release to move the cursor without leaving a stroke">
+    <label><input type="checkbox" id="clickToDraw"> Click to draw</label>
+  </div>
+
   <div class="control-group inline" data-tip="The line gets thinner the faster your cursor moves, like a real pen">
     <label><input type="checkbox" id="reactSpeed"> React to cursor speed</label>
   </div>
@@ -495,6 +499,7 @@
       <h2>Drawing</h2>
       <ul>
         <li>Move your cursor across the canvas &mdash; it draws, mirrored into a mandala.</li>
+        <li>Tick <b>Click to draw</b> on the Customize tab and the pen only touches down while you <b>hold the left button</b> &mdash; handy with Permanent trails, so you can draw a border, let go, and start again in the middle.</li>
         <li>Leave the cursor still for a second and the mandala <b>draws itself</b>, restyling as it goes. This only happens while <b>Draw on its own when idle</b> is ticked on the Ambient tab &mdash; untick it and the canvas waits for your hand.</li>
         <li>Everything on the Customize tab changes the art live.</li>
       </ul>

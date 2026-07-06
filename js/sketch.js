@@ -3,6 +3,7 @@ let symmetry = 12;
 let mirror = true;
 let brushSize = 10;
 let reactToSpeed = false;
+let clickToDraw = false;
 let colourMode = 'rainbow';
 let solidColourHex = '#ff3e94';
 let trailMode = 'fade';
@@ -305,6 +306,15 @@ document.querySelectorAll('.ui').forEach((el) => {
   el.addEventListener('mouseleave', () => { mouseOverUI = false; });
 });
 
+// click-to-draw: is the primary button (or a touch/pen contact) held on the
+// canvas right now? A press that starts on the UI never counts, and anything
+// that can swallow the release (leaving the window, alt-tab) clears it.
+let pointerHeld = false;
+window.addEventListener('pointerdown', (e) => { if (e.button === 0 && !mouseOverUI) pointerHeld = true; });
+window.addEventListener('pointerup', () => { pointerHeld = false; });
+window.addEventListener('pointercancel', () => { pointerHeld = false; });
+window.addEventListener('blur', () => { pointerHeld = false; });
+
 let hueShift = 0;
 let lastX = null, lastY = null;
 let particles = [];
@@ -509,7 +519,10 @@ function draw(){
     // lastX/lastY still track the cursor while over UI (just below), so the
     // moment it re-enters the canvas there's no big stroke connecting the
     // pre-hover position to the current one — it just resumes cleanly.
-    if (!mouseOverUI && (mouseX !== lastX || mouseY !== lastY)){
+    // lastX/lastY keep tracking even while click-to-draw withholds the pen,
+    // so pressing the button starts the stroke at the cursor — no line
+    // bridging from wherever the last stroke ended
+    if (!mouseOverUI && (!clickToDraw || pointerHeld) && (mouseX !== lastX || mouseY !== lastY)){
       drawMandalaStroke(lastX, lastY, mouseX, mouseY);
     }
     lastX = mouseX; lastY = mouseY;
@@ -1199,6 +1212,7 @@ function applyMandalaState(m){
   mirror = m.mirror; $('mirror').checked = mirror;
   brushSize = m.brushSize; $('brush').value = brushSize; $('brushVal').textContent = brushSize;
   reactToSpeed = m.reactToSpeed; $('reactSpeed').checked = reactToSpeed;
+  clickToDraw = !!m.clickToDraw; $('clickToDraw').checked = clickToDraw;
   colourMode = m.colourMode; $('colourMode').value = colourMode;
   solidColourHex = m.solidColourHex; $('solidColor').value = solidColourHex;
   symmetryMode = m.symmetryMode || 'radial'; $('symmetryMode').value = symmetryMode;
@@ -1246,7 +1260,7 @@ function applyMandalaState(m){
 
 function currentMandalaState(){
   return {
-    symmetry, mirror, symmetryMode, brushSize, reactToSpeed, colourMode, solidColourHex,
+    symmetry, mirror, symmetryMode, brushSize, reactToSpeed, clickToDraw, colourMode, solidColourHex,
     trailMode, fadeSpeed, cycleBuildSeconds, bgColourHex, palette, glowIntensity, pulseBrush,
     customPalette: customPalette.slice(),
     strokeStyleMode, autoRotate, rotateSpeed, sparkleDust, idleDraw,
@@ -1360,6 +1374,7 @@ function applyPreset(name){
   if (p.pulseBrush !== undefined){ pulseBrush = p.pulseBrush; $('pulseBrush').checked = pulseBrush; }
   if (p.sparkleDust !== undefined){ sparkleDust = p.sparkleDust; $('sparkleDust').checked = sparkleDust; }
   if (p.reactToSpeed !== undefined){ reactToSpeed = p.reactToSpeed; $('reactSpeed').checked = reactToSpeed; }
+  if (p.clickToDraw !== undefined){ clickToDraw = p.clickToDraw; $('clickToDraw').checked = clickToDraw; }
   if (p.strokeAlpha !== undefined){ strokeAlpha = p.strokeAlpha; $('strokeAlpha').value = strokeAlpha; $('strokeAlphaVal').textContent = strokeAlpha; }
   if (p.rainbowSpeed !== undefined){ rainbowSpeed = p.rainbowSpeed; $('rainbowSpeed').value = rainbowSpeed; $('rainbowSpeedVal').textContent = rainbowSpeed.toFixed(1); }
   if (p.autoRotate !== undefined){ autoRotate = p.autoRotate; $('autoRotate').checked = autoRotate; $('rotateGroup').style.display = autoRotate ? 'block' : 'none'; }
@@ -1428,6 +1443,7 @@ function wireUpPanel(){
   });
 
   $('reactSpeed').addEventListener('change', (e) => { reactToSpeed = e.target.checked; saveMandalaState(); });
+  $('clickToDraw').addEventListener('change', (e) => { clickToDraw = e.target.checked; saveMandalaState(); });
   $('pulseBrush').addEventListener('change', (e) => { pulseBrush = e.target.checked; saveMandalaState(); });
   $('sparkleDust').addEventListener('change', (e) => { sparkleDust = e.target.checked; saveMandalaState(); });
   $('idleDraw').addEventListener('change', (e) => { idleDraw = e.target.checked; saveMandalaState(); });
