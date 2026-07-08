@@ -42,27 +42,31 @@ for weather, made only if you add a location.
 
 <div align="center">
 
-### ✦ installing (unpacked / developer mode)
+### ✦ installing
 
 </div>
 
-This isn't published to the stores yet — see [PUBLISHING.md](PUBLISHING.md) for
-that. Until then, load it unpacked:
+**Chrome / Edge / Brave (Chromium)** — live on the Chrome Web Store. Search for
+"Mandala" or grab it from your Chromium browser's extension store and open a new
+tab.
 
-**Chrome / Edge / Brave (Chromium)**
-```
-1. Go to chrome://extensions
-2. Enable "Developer mode" (top right)
-3. "Load unpacked" → select this repo's folder
-4. Open a new tab
-```
-
-**Firefox**
+**Firefox** — the add-on is submitted and awaiting Mozilla's review. Until it's
+approved you can load it temporarily:
 ```
 1. Go to about:debugging#/runtime/this-firefox
 2. "Load Temporary Add-on…" → select manifest.json
 3. Open a new tab
    (temporary add-ons are removed when Firefox closes — reload as needed)
+```
+
+Prefer to run it straight from source? Load it unpacked:
+
+**Chromium**
+```
+1. Go to chrome://extensions
+2. Enable "Developer mode" (top right)
+3. "Load unpacked" → select this repo's folder
+4. Open a new tab
 ```
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=0:f2c14e,50:ff3e94,100:5fe8ff&height=3&section=header" width="100%"/>
